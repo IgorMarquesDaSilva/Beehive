@@ -21,18 +21,24 @@ function initSocket(io) {
 
     console.log(`Usuário conectado: ${usuario.nome}`);
 
-    // entra em um canal
     socket.on("entrarCanal", (canalId) => {
-      // sai de todos os canais anteriores
       socket.rooms.forEach((room) => {
         if (room !== socket.id) socket.leave(room);
       });
-
       socket.join(`canal_${canalId}`);
       console.log(`${usuario.nome} entrou no canal ${canalId}`);
     });
 
-    // recebe e transmite mensagem
+    // indica que está digitando
+    socket.on("digitando", (canalId) => {
+      socket.to(`canal_${canalId}`).emit("digitando", { nome: usuario.nome });
+    });
+
+    // indica que parou de digitar
+    socket.on("parouDigitar", (canalId) => {
+      socket.to(`canal_${canalId}`).emit("parouDigitar", { nome: usuario.nome });
+    });
+
     socket.on("mensagem", async ({ texto, canalId }) => {
       if (!texto || typeof texto !== "string" || texto.trim() === "") return;
       if (!canalId) return;

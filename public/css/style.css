@@ -279,3 +279,14 @@ body {
 .chat-input button:hover {
   background-color: #e09510;
 }
+/* ========== DIGITANDO ========== */
+.digitando-container {
+  padding: 4px 24px 8px;
+  min-height: 24px;
+}
+
+#digitando-texto {
+  font-size: 12px;
+  color: #f5a623;
+  font-style: italic;
+}

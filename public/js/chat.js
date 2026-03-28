@@ -8,6 +8,7 @@ document.getElementById("nome-usuario").innerText = usuario.nome;
 
 let canalAtual = null;
 let socket = null;
+let timeoutDigitando = null;
 
 async function iniciar() {
   const res = await fetch("/auth/token", { credentials: "include" });
@@ -17,6 +18,16 @@ async function iniciar() {
 
   socket.on("mensagem", (data) => {
     adicionarMensagem(data.nome, data.texto, data.nome === usuario.nome);
+  });
+
+  // recebe evento de digitando
+  socket.on("digitando", (data) => {
+    document.getElementById("digitando-texto").innerText = `${data.nome} está digitando...`;
+  });
+
+  // recebe evento de parou de digitar
+  socket.on("parouDigitar", () => {
+    document.getElementById("digitando-texto").innerText = "";
   });
 }
 
@@ -44,6 +55,7 @@ function entrarCanal(canal, event) {
 
   document.getElementById("canal-ativo").innerText = `# ${canal.nome}`;
   document.getElementById("chat-mensagens").innerHTML = "";
+  document.getElementById("digitando-texto").innerText = "";
 
   socket.emit("entrarCanal", canal.id);
   carregarMensagens(canal.id);
@@ -74,18 +86,33 @@ function enviar() {
   const input = document.getElementById("msg-input");
   const texto = input.value.trim();
 
-  if (!texto) {
-    return;
-  }
-
+  if (!texto) return;
   if (!canalAtual) {
     alert("Selecione um canal antes de enviar!");
     return;
   }
 
   socket.emit("mensagem", { texto, canalId: canalAtual });
+  socket.emit("parouDigitar", canalAtual);
   input.value = "";
 }
+
+// detecta quando o usuário está digitando
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("msg-input");
+
+  input.addEventListener("input", () => {
+    if (!canalAtual) return;
+
+    socket.emit("digitando", canalAtual);
+
+    // para de emitir depois de 2 segundos sem digitar
+    clearTimeout(timeoutDigitando);
+    timeoutDigitando = setTimeout(() => {
+      socket.emit("parouDigitar", canalAtual);
+    }, 2000);
+  });
+});
 
 async function logout() {
   await fetch("/auth/logout", { method: "POST", credentials: "include" });
