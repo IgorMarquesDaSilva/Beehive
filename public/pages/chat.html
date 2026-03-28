@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beehive 🐝 - Chat</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <div class="chat-container">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>🐝 Beehive</h2>
+        <p id="nome-usuario">Carregando...</p>
+      </div>
+
+      <div class="canais-titulo">Canais</div>
+      <div id="lista-canais"></div>
+
+      <div class="sidebar-footer">
+        <button onclick="logout()">Sair</button>
+      </div>
+    </div>
+
+    <!-- ÁREA PRINCIPAL -->
+    <div class="chat-main">
+      <div class="chat-header" id="canal-ativo">
+        Selecione um canal
+      </div>
+
+      <div class="chat-mensagens" id="chat-mensagens"></div>
+
+      <div class="chat-input">
+        <input
+          type="text"
+          id="msg-input"
+          placeholder="Digite sua mensagem..."
+          onkeydown="if(event.key === 'Enter') enviar()"
+        />
+        <button onclick="enviar()">Enviar</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/chat.js"></script>
+</body>
+</html>

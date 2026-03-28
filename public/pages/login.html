@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beehive 🐝</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="login-box">
+
+      <h1>🐝 Beehive</h1>
+      <p>Plataforma de comunicação empresarial</p>
+
+      <!-- FORMULÁRIO DE LOGIN -->
+      <div id="tela-login">
+        <input type="email" id="login-email" placeholder="Email" />
+        <input type="password" id="login-senha" placeholder="Senha" />
+        <button onclick="login()">Entrar</button>
+        <div class="trocar">
+          Não tem conta? <span onclick="trocarTela('cadastro')">Cadastre-se</span>
+        </div>
+        <p class="erro" id="login-erro"></p>
+      </div>
+
+      <!-- FORMULÁRIO DE CADASTRO -->
+      <div id="tela-cadastro" style="display:none">
+        <input type="text" id="cadastro-nome" placeholder="Nome" />
+        <input type="email" id="cadastro-email" placeholder="Email" />
+        <input type="password" id="cadastro-senha" placeholder="Senha" />
+        <button onclick="cadastrar()">Criar conta</button>
+        <div class="trocar">
+          Já tem conta? <span onclick="trocarTela('login')">Entrar</span>
+        </div>
+        <p class="erro" id="cadastro-erro"></p>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/js/login.js"></script>
+</body>
+</html>
