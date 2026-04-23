@@ -16,6 +16,9 @@
 ![Socket.io](https://img.shields.io/badge/Socket.io-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
+![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
+
+🌐 **[Acesse o Beehive](https://beehive-production-9bd0.up.railway.app)**
 
 </div>
 
@@ -34,8 +37,13 @@ A plataforma foi construída com foco em **rastreabilidade**, **organização** 
 - 🔐 **Autenticação segura** — Login e cadastro com senha criptografada via bcrypt e sessão gerenciada por JWT em cookie httpOnly
 - 💬 **Chat em tempo real** — Mensagens instantâneas via WebSocket com Socket.io
 - 📢 **Canais por departamento** — Comunicação organizada em canais separados (#geral, #ti, #rh, #projetos)
+- ➕ **Criar canais** — Crie novos canais diretamente pela interface
 - 📜 **Histórico de mensagens** — Mensagens persistidas no banco e carregadas ao entrar no canal
-- 🎨 **Interface moderna** — Visual escuro com identidade própria e responsivo
+- ✍️ **Indicador de digitando** — Veja em tempo real quando alguém está digitando
+- ⏰ **Horário nas mensagens** — Cada mensagem exibe o horário de envio
+- 🗑️ **Apagar mensagens** — Autores podem apagar suas próprias mensagens
+- 👤 **Página de perfil** — Edite nome, bio e senha
+- 🎨 **Interface moderna** — Visual escuro com identidade própria
 
 ---
 
@@ -46,9 +54,10 @@ A plataforma foi construída com foco em **rastreabilidade**, **organização** 
 | Runtime | Node.js |
 | Framework web | Express |
 | Tempo real | Socket.io |
-| Banco de dados | MySQL (XAMPP/MariaDB) |
+| Banco de dados | MySQL |
 | Autenticação | JWT + bcrypt |
 | Front-end | HTML, CSS, JavaScript puro |
+| Deploy | Railway |
 
 ---
 
@@ -74,11 +83,13 @@ beehive/
 │   │   └── style.css            # Estilos globais
 │   ├── js/
 │   │   ├── login.js             # Lógica da tela de login
-│   │   └── chat.js              # Lógica da tela de chat
+│   │   ├── chat.js              # Lógica da tela de chat
+│   │   └── perfil.js            # Lógica da tela de perfil
 │   └── pages/
 │       ├── login.html           # Tela de login e cadastro
-│       └── chat.html            # Tela principal do chat
-├── .env                         # Variáveis de ambiente (não versionado)
+│       ├── chat.html            # Tela principal do chat
+│       └── perfil.html          # Tela de perfil do usuário
+├── .env.example                 # Modelo de variáveis de ambiente
 ├── .gitignore
 ├── package.json
 └── server.js                    # Ponto de entrada da aplicação
@@ -86,7 +97,7 @@ beehive/
 
 ---
 
-## 🚀 Como Rodar o Projeto
+## 🚀 Como Rodar Localmente
 
 ### Pré-requisitos
 
@@ -96,8 +107,8 @@ beehive/
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/beehive.git
-cd beehive
+git clone https://github.com/IgorMarquesDaSilva/Beehive.git
+cd Beehive
 ```
 
 ### 2. Instale as dependências
@@ -108,7 +119,7 @@ npm install
 
 ### 3. Configure o ambiente
 
-Crie um arquivo `.env` na raiz do projeto com o seguinte conteúdo:
+Crie um arquivo `.env` na raiz do projeto baseado no `.env.example`:
 
 ```env
 PORT=3000
@@ -116,6 +127,7 @@ DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=beehive
+DB_PORT=3306
 JWT_SECRET=beehive_segredo_123
 ```
 
@@ -123,46 +135,7 @@ JWT_SECRET=beehive_segredo_123
 
 ### 4. Configure o banco de dados
 
-Abra o **phpMyAdmin** e execute o seguinte SQL:
-
-```sql
-CREATE DATABASE beehive;
-USE beehive;
-
-CREATE TABLE `usuarios` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `nome` varchar(100) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `senha` varchar(255) NOT NULL,
-  `criado_em` datetime DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE `canais` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `nome` varchar(100) NOT NULL,
-  `descricao` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE `mensagens` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `usuario_id` int(11) NOT NULL,
-  `canal_id` int(11) NOT NULL,
-  `texto` text NOT NULL,
-  `enviado_em` datetime DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  FOREIGN KEY (`usuario_id`) REFERENCES `usuarios`(`id`),
-  FOREIGN KEY (`canal_id`) REFERENCES `canais`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO `canais` (`nome`, `descricao`) VALUES
-('geral', 'Canal geral da empresa'),
-('ti', 'Canal do departamento de TI'),
-('rh', 'Canal do departamento de RH'),
-('projetos', 'Canal de acompanhamento de projetos');
-```
+Abra o **phpMyAdmin** e execute o SQL disponível em `schema.sql`.
 
 ### 5. Inicie o servidor
 
@@ -171,6 +144,16 @@ node server.js
 ```
 
 Acesse **http://localhost:3000** no navegador.
+
+---
+
+## ☁️ Deploy
+
+O Beehive está hospedado no **Railway** com banco de dados MySQL em nuvem.
+
+🌐 **[beehive-production-9bd0.up.railway.app](https://beehive-production-9bd0.up.railway.app)**
+
+Para fazer deploy de uma nova versão basta dar `git push` — o Railway detecta automaticamente e atualiza o site.
 
 ---
 
@@ -186,11 +169,10 @@ Acesse **http://localhost:3000** no navegador.
 
 ## 🗺️ Roadmap
 
-- [ ] Indicador de "usuário digitando..."
-- [ ] Criação e gerenciamento de canais pela interface
-- [ ] Página de perfil do usuário
+- [ ] Contagem de usuários online por canal
 - [ ] Notificações de novas mensagens
 - [ ] Busca no histórico de mensagens
+- [ ] Mencionar usuários com @
 - [ ] Integração com IA para resumo de conversas
 
 ---
