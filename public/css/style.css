@@ -212,7 +212,9 @@ body {
   flex-direction: column;
   max-width: 60%;
   min-width: 0;
+  width: fit-content;
 }
+
 .mensagem .autor {
   font-size: 11px;
   color: #f5a623;
@@ -233,6 +235,9 @@ body {
 
 .mensagem.propria {
   align-self: flex-end;
+  max-width: 60%;
+  min-width: 0;
+  width: fit-content;
 }
 
 .mensagem.propria .autor {
