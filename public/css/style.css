@@ -225,6 +225,10 @@ body {
   border-radius: 0 10px 10px 10px;
   font-size: 14px;
   line-height: 1.5;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .mensagem.propria {
