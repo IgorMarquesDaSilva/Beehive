@@ -1,13 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const { register, login, logout } = require("../controllers/authController");
+const { register, login, logout, getPerfil, atualizarPerfil } = require("../controllers/authController");
 const authMiddleware = require("../middlewares/authMiddleware");
 
 router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", logout);
 
-// rota que devolve o token para o socket usar
+router.get("/perfil", authMiddleware, getPerfil);
+router.put("/perfil", authMiddleware, atualizarPerfil);
+
 router.get("/token", authMiddleware, (req, res) => {
   const jwt = require("jsonwebtoken");
   const token = jwt.sign(

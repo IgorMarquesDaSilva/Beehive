@@ -63,4 +63,56 @@ async function logout(req, res) {
   res.json({ mensagem: "Logout realizado" });
 }
 
-module.exports = { register, login, logout };
+async function getPerfil(req, res) {
+  try {
+    const [results] = await db.query(
+      "SELECT id, nome, email, bio, criado_em FROM usuarios WHERE id = ?",
+      [req.usuario.id]
+    );
+
+    if (results.length === 0) {
+      return res.status(404).json({ erro: "Usuário não encontrado" });
+    }
+
+    res.json(results[0]);
+  } catch (err) {
+    res.status(500).json({ erro: "Erro interno" });
+  }
+}
+
+async function atualizarPerfil(req, res) {
+  const { nome, bio, senhaAtual, novaSenha } = req.body;
+
+  try {
+    const [results] = await db.query(
+      "SELECT * FROM usuarios WHERE id = ?",
+      [req.usuario.id]
+    );
+
+    const user = results[0];
+
+    // se quiser trocar a senha
+    if (senhaAtual && novaSenha) {
+      const senhaValida = await bcrypt.compare(senhaAtual, user.senha);
+      if (!senhaValida) {
+        return res.status(401).json({ erro: "Senha atual incorreta" });
+      }
+      const hash = await bcrypt.hash(novaSenha, 10);
+      await db.query(
+        "UPDATE usuarios SET nome = ?, bio = ?, senha = ? WHERE id = ?",
+        [nome || user.nome, bio || null, hash, req.usuario.id]
+      );
+    } else {
+      await db.query(
+        "UPDATE usuarios SET nome = ?, bio = ? WHERE id = ?",
+        [nome || user.nome, bio || null, req.usuario.id]
+      );
+    }
+
+    res.json({ mensagem: "Perfil atualizado com sucesso" });
+  } catch (err) {
+    res.status(500).json({ erro: "Erro interno" });
+  }
+}
+
+module.exports = { register, login, logout, getPerfil, atualizarPerfil };

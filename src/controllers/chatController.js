@@ -28,4 +28,25 @@ async function getMensagens(req, res) {
   }
 }
 
-module.exports = { getCanais, getMensagens };
+async function criarCanal(req, res) {
+  const { nome, descricao } = req.body;
+
+  if (!nome || nome.trim() === "") {
+    return res.status(400).json({ erro: "Nome do canal é obrigatório" });
+  }
+
+  try {
+    const [result] = await db.query(
+      "INSERT INTO canais (nome, descricao) VALUES (?, ?)",
+      [nome.trim().toLowerCase(), descricao || ""]
+    );
+    res.json({ id: result.insertId, nome: nome.trim().toLowerCase(), descricao: descricao || "" });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({ erro: "Canal já existe" });
+    }
+    res.status(500).json({ erro: "Erro ao criar canal" });
+  }
+}
+
+module.exports = { getCanais, getMensagens, criarCanal };

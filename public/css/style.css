@@ -290,3 +290,272 @@ body {
   color: #f5a623;
   font-style: italic;
 }
+/* ========== HORÁRIO ========== */
+.hora {
+  font-size: 10px;
+  color: #555;
+  margin-left: 6px;
+  font-style: normal;
+  font-weight: normal;
+}
+/* ========== BOTÃO NOVO CANAL ========== */
+.canais-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+}
+
+.btn-novo-canal {
+  font-size: 20px;
+  color: #f5a623;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.btn-novo-canal:hover {
+  color: #e09510;
+}
+
+/* ========== MODAL ========== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 99;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #16213e;
+  padding: 32px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  z-index: 100;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.modal h3 {
+  margin-bottom: 20px;
+  color: #f5a623;
+  font-size: 18px;
+}
+
+.modal input {
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  background-color: #0f3460;
+  color: #e0e0e0;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.2s;
+}
+
+.modal input:focus {
+  border-color: #f5a623;
+}
+
+.modal-botoes {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn-cancelar {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid #555;
+  color: #aaa;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-cancelar:hover {
+  background-color: #2a2a4a;
+}
+
+.btn-criar {
+  flex: 1;
+  padding: 10px;
+  background-color: #f5a623;
+  border: none;
+  color: #1a1a2e;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-criar:hover {
+  background-color: #e09510;
+}
+
+.modal .erro {
+  color: #e74c3c;
+  font-size: 13px;
+  margin-top: 8px;
+  text-align: center;
+}
+/* ========== PERFIL ========== */
+.perfil-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+.perfil-box {
+  background-color: #16213e;
+  padding: 40px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.perfil-header {
+  margin-bottom: 24px;
+}
+
+.perfil-header h1 {
+  font-size: 24px;
+  color: #f5a623;
+  margin-top: 12px;
+}
+
+.btn-voltar {
+  color: #888;
+  text-decoration: none;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+
+.btn-voltar:hover {
+  color: #f5a623;
+}
+
+.perfil-avatar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.avatar-circulo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #f5a623;
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.perfil-form label {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 6px;
+  margin-top: 16px;
+}
+
+.perfil-form input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  background-color: #0f3460;
+  color: #e0e0e0;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.2s;
+}
+
+.perfil-form input:focus {
+  border-color: #f5a623;
+}
+
+.perfil-form input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.perfil-form h3 {
+  margin-top: 8px;
+  color: #e0e0e0;
+  font-size: 15px;
+}
+
+.perfil-form button {
+  width: 100%;
+  padding: 12px;
+  background-color: #f5a623;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 24px;
+  transition: background 0.2s;
+}
+
+.perfil-form button:hover {
+  background-color: #e09510;
+}
+
+.divisor {
+  border: none;
+  border-top: 1px solid #2a2a4a;
+  margin: 24px 0 8px;
+}
+
+.sucesso {
+  color: #2ecc71;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 12px;
+}
+
+.erro {
+  color: #e74c3c;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 12px;
+}
+.btn-perfil {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #f5a623;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.btn-perfil:hover {
+  color: #e09510;
+}

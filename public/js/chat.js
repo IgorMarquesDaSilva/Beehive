@@ -17,15 +17,13 @@ async function iniciar() {
   socket = io({ auth: { token: data.token } });
 
   socket.on("mensagem", (data) => {
-    adicionarMensagem(data.nome, data.texto, data.nome === usuario.nome);
+    adicionarMensagem(data.nome, data.texto, data.nome === usuario.nome, data.enviado_em);
   });
 
-  // recebe evento de digitando
   socket.on("digitando", (data) => {
     document.getElementById("digitando-texto").innerText = `${data.nome} está digitando...`;
   });
 
-  // recebe evento de parou de digitar
   socket.on("parouDigitar", () => {
     document.getElementById("digitando-texto").innerText = "";
   });
@@ -64,16 +62,20 @@ function entrarCanal(canal, event) {
 async function carregarMensagens(canalId) {
   const res = await fetch(`/chat/mensagens/${canalId}`, { credentials: "include" });
   const mensagens = await res.json();
-  mensagens.forEach((m) => adicionarMensagem(m.nome, m.texto, m.nome === usuario.nome));
+  mensagens.forEach((m) => adicionarMensagem(m.nome, m.texto, m.nome === usuario.nome, m.enviado_em));
 }
 
-function adicionarMensagem(nome, texto, propria = false) {
+function adicionarMensagem(nome, texto, propria = false, enviado_em = null) {
   const div = document.createElement("div");
   div.classList.add("mensagem");
   if (propria) div.classList.add("propria");
 
+  const hora = enviado_em
+    ? new Date(enviado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    : new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
   div.innerHTML = `
-    <span class="autor">${nome}</span>
+    <span class="autor">${nome} <span class="hora">${hora}</span></span>
     <div class="balao">${texto}</div>
   `;
 
@@ -97,7 +99,6 @@ function enviar() {
   input.value = "";
 }
 
-// detecta quando o usuário está digitando
 document.addEventListener("DOMContentLoaded", () => {
   const input = document.getElementById("msg-input");
 
@@ -106,13 +107,53 @@ document.addEventListener("DOMContentLoaded", () => {
 
     socket.emit("digitando", canalAtual);
 
-    // para de emitir depois de 2 segundos sem digitar
     clearTimeout(timeoutDigitando);
     timeoutDigitando = setTimeout(() => {
       socket.emit("parouDigitar", canalAtual);
     }, 2000);
   });
 });
+
+// modal de criar canal
+function abrirModalCanal() {
+  document.getElementById("modal-overlay").style.display = "block";
+  document.getElementById("modal-canal").style.display = "block";
+  document.getElementById("canal-nome").focus();
+  document.getElementById("canal-erro").innerText = "";
+  document.getElementById("canal-nome").value = "";
+  document.getElementById("canal-descricao").value = "";
+}
+
+function fecharModalCanal() {
+  document.getElementById("modal-overlay").style.display = "none";
+  document.getElementById("modal-canal").style.display = "none";
+}
+
+async function criarCanal() {
+  const nome = document.getElementById("canal-nome").value.trim();
+  const descricao = document.getElementById("canal-descricao").value.trim();
+
+  if (!nome) {
+    document.getElementById("canal-erro").innerText = "Nome do canal é obrigatório";
+    return;
+  }
+
+  const res = await fetch("/chat/canais", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ nome, descricao }),
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    fecharModalCanal();
+    carregarCanais();
+  } else {
+    document.getElementById("canal-erro").innerText = data.erro || "Erro ao criar canal";
+  }
+}
 
 async function logout() {
   await fetch("/auth/logout", { method: "POST", credentials: "include" });

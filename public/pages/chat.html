@@ -15,9 +15,13 @@
       <div class="sidebar-header">
         <h2>🐝 Beehive</h2>
         <p id="nome-usuario">Carregando...</p>
+        <a href="/pages/perfil.html" class="btn-perfil">Ver meu perfil</a>
       </div>
 
-      <div class="canais-titulo">Canais</div>
+      <div class="canais-titulo">
+        Canais
+        <span class="btn-novo-canal" onclick="abrirModalCanal()">+</span>
+      </div>
       <div id="lista-canais"></div>
 
       <div class="sidebar-footer">
@@ -33,7 +37,6 @@
 
       <div class="chat-mensagens" id="chat-mensagens"></div>
 
-      <!-- INDICADOR DE DIGITANDO -->
       <div class="digitando-container">
         <span id="digitando-texto"></span>
       </div>
@@ -49,6 +52,19 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- MODAL CRIAR CANAL -->
+  <div class="modal-overlay" id="modal-overlay" onclick="fecharModalCanal()"></div>
+  <div class="modal" id="modal-canal">
+    <h3>Novo Canal</h3>
+    <input type="text" id="canal-nome" placeholder="Nome do canal (ex: financeiro)" />
+    <input type="text" id="canal-descricao" placeholder="Descrição (opcional)" />
+    <div class="modal-botoes">
+      <button class="btn-cancelar" onclick="fecharModalCanal()">Cancelar</button>
+      <button class="btn-criar" onclick="criarCanal()">Criar</button>
+    </div>
+    <p class="erro" id="canal-erro"></p>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
