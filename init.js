@@ -1,37 +1,8 @@
 require("dotenv").config();
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const cookieParser = require("cookie-parser");
-const path = require("path");
 const db = require("./src/config/db");
 
-const authRoutes = require("./src/routes/authRoutes");
-const chatRoutes = require("./src/routes/chatRoutes");
-const initSocket = require("./src/socket/chatSocket");
-
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: "*", credentials: true },
-});
-
-app.use(express.json());
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, "public")));
-
-app.use("/auth", authRoutes);
-app.use("/chat", chatRoutes);
-
-app.get("/", (req, res) => {
-  res.redirect("/pages/login.html");
-});
-
-initSocket(io);
-
-async function iniciarServidor() {
+async function init() {
   try {
-    // inicializa tabelas se não existirem
     await db.query(`
       CREATE TABLE IF NOT EXISTS \`usuarios\` (
         \`id\` int(11) NOT NULL AUTO_INCREMENT,
@@ -76,16 +47,12 @@ async function iniciarServidor() {
       ('projetos', 'Canal de acompanhamento de projetos')
     `);
 
-    console.log("Banco inicializado!");
-
-    const PORT = process.env.PORT || 3000;
-    server.listen(PORT, () => {
-      console.log(`Servidor rodando em http://localhost:${PORT}`);
-    });
+    console.log("Banco de dados inicializado com sucesso!");
+    process.exit(0);
   } catch (err) {
-    console.error("Erro ao iniciar servidor:", err);
+    console.error("Erro ao inicializar banco:", err);
     process.exit(1);
   }
 }
 
-iniciarServidor();
+init();
