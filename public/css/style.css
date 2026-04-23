@@ -559,3 +559,29 @@ body {
 .btn-perfil:hover {
   color: #e09510;
 }
+/* ========== APAGAR MENSAGEM ========== */
+.balao-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-apagar {
+  background: transparent;
+  border: none;
+  color: #555;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.mensagem:hover .btn-apagar {
+  opacity: 1;
+}
+
+.btn-apagar:hover {
+  color: #e74c3c;
+}

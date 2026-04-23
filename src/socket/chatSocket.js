@@ -29,12 +29,10 @@ function initSocket(io) {
       console.log(`${usuario.nome} entrou no canal ${canalId}`);
     });
 
-    // indica que está digitando
     socket.on("digitando", (canalId) => {
       socket.to(`canal_${canalId}`).emit("digitando", { nome: usuario.nome });
     });
 
-    // indica que parou de digitar
     socket.on("parouDigitar", (canalId) => {
       socket.to(`canal_${canalId}`).emit("parouDigitar", { nome: usuario.nome });
     });
@@ -44,12 +42,13 @@ function initSocket(io) {
       if (!canalId) return;
 
       try {
-        await db.query(
+        const [result] = await db.query(
           "INSERT INTO mensagens (usuario_id, canal_id, texto) VALUES (?, ?, ?)",
           [usuario.id, canalId, texto.trim()]
         );
 
         io.to(`canal_${canalId}`).emit("mensagem", {
+          id: result.insertId,
           nome: usuario.nome,
           texto: texto.trim(),
           enviado_em: new Date(),
@@ -57,6 +56,10 @@ function initSocket(io) {
       } catch (err) {
         console.error("Erro ao salvar mensagem:", err);
       }
+    });
+
+    socket.on("mensagemApagada", ({ id, canalId }) => {
+      io.to(`canal_${canalId}`).emit("mensagemApagada", id);
     });
 
     socket.on("disconnect", () => {

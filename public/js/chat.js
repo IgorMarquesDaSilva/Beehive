@@ -17,7 +17,12 @@ async function iniciar() {
   socket = io({ auth: { token: data.token } });
 
   socket.on("mensagem", (data) => {
-    adicionarMensagem(data.nome, data.texto, data.nome === usuario.nome, data.enviado_em);
+    adicionarMensagem(data.id, data.nome, data.texto, data.nome === usuario.nome, data.enviado_em);
+  });
+
+  socket.on("mensagemApagada", (id) => {
+    const el = document.querySelector(`[data-id="${id}"]`);
+    if (el) el.remove();
   });
 
   socket.on("digitando", (data) => {
@@ -62,26 +67,51 @@ function entrarCanal(canal, event) {
 async function carregarMensagens(canalId) {
   const res = await fetch(`/chat/mensagens/${canalId}`, { credentials: "include" });
   const mensagens = await res.json();
-  mensagens.forEach((m) => adicionarMensagem(m.nome, m.texto, m.nome === usuario.nome, m.enviado_em));
+  mensagens.forEach((m) => adicionarMensagem(m.id, m.nome, m.texto, m.usuario_id === usuario.id, m.enviado_em));
 }
 
-function adicionarMensagem(nome, texto, propria = false, enviado_em = null) {
+function adicionarMensagem(id, nome, texto, propria = false, enviado_em = null) {
   const div = document.createElement("div");
   div.classList.add("mensagem");
+  div.setAttribute("data-id", id);
   if (propria) div.classList.add("propria");
 
   const hora = enviado_em
     ? new Date(enviado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     : new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
+  const btnApagar = propria
+    ? `<button class="btn-apagar" onclick="apagarMensagem(${id})">✕</button>`
+    : "";
+
   div.innerHTML = `
     <span class="autor">${nome} <span class="hora">${hora}</span></span>
-    <div class="balao">${texto}</div>
+    <div class="balao-wrapper">
+      <div class="balao">${texto}</div>
+      ${btnApagar}
+    </div>
   `;
 
   const container = document.getElementById("chat-mensagens");
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
+}
+
+async function apagarMensagem(id) {
+  if (!confirm("Apagar essa mensagem?")) return;
+
+  const res = await fetch(`/chat/mensagens/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    socket.emit("mensagemApagada", { id, canalId: canalAtual });
+  } else {
+    alert(data.erro || "Erro ao apagar mensagem");
+  }
 }
 
 function enviar() {
@@ -114,7 +144,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// modal de criar canal
 function abrirModalCanal() {
   document.getElementById("modal-overlay").style.display = "block";
   document.getElementById("modal-canal").style.display = "block";

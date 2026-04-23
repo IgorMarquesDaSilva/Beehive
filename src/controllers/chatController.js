@@ -14,7 +14,7 @@ async function getMensagens(req, res) {
 
   try {
     const [mensagens] = await db.query(
-      `SELECT m.id, m.texto, m.enviado_em, u.nome 
+      `SELECT m.id, m.texto, m.enviado_em, m.usuario_id, u.nome 
        FROM mensagens m 
        JOIN usuarios u ON m.usuario_id = u.id
        WHERE m.canal_id = ?
@@ -49,4 +49,32 @@ async function criarCanal(req, res) {
   }
 }
 
-module.exports = { getCanais, getMensagens, criarCanal };
+async function apagarMensagem(req, res) {
+  const { id } = req.params;
+
+  try {
+    const [results] = await db.query(
+      "SELECT * FROM mensagens WHERE id = ?",
+      [id]
+    );
+
+    if (results.length === 0) {
+      return res.status(404).json({ erro: "Mensagem não encontrada" });
+    }
+
+    const mensagem = results[0];
+
+    // só o autor pode apagar
+    if (mensagem.usuario_id !== req.usuario.id) {
+      return res.status(403).json({ erro: "Você não pode apagar essa mensagem" });
+    }
+
+    await db.query("DELETE FROM mensagens WHERE id = ?", [id]);
+
+    res.json({ mensagem: "Mensagem apagada", id: Number(id), canalId: mensagem.canal_id });
+  } catch (err) {
+    res.status(500).json({ erro: "Erro ao apagar mensagem" });
+  }
+}
+
+module.exports = { getCanais, getMensagens, criarCanal, apagarMensagem };
