@@ -211,8 +211,8 @@ body {
   display: flex;
   flex-direction: column;
   max-width: 60%;
+  min-width: 0;
 }
-
 .mensagem .autor {
   font-size: 11px;
   color: #f5a623;
@@ -243,6 +243,10 @@ body {
 .mensagem.propria .balao {
   background-color: #0f3460;
   border-radius: 10px 0 10px 10px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .chat-input {
