@@ -1,6 +1,5 @@
 const db = require("../config/db");
 const jwt = require("jsonwebtoken");
-require("dotenv").config();
 
 function initSocket(io) {
   io.on("connection", (socket) => {
