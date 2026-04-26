@@ -24,6 +24,11 @@
       </div>
       <div id="lista-canais"></div>
 
+      <div class="canais-titulo" style="margin-top: 8px;">
+        Voz
+      </div>
+      <div id="lista-voz"></div>
+
       <div class="sidebar-footer">
         <button onclick="logout()">Sair</button>
       </div>
@@ -69,7 +74,31 @@
     <p class="erro" id="canal-erro"></p>
   </div>
 
+  <!-- MODAL CHAMADA RECEBIDA -->
+  <div class="modal-overlay" id="modal-chamada-overlay"></div>
+  <div class="modal" id="modal-chamada" style="display:none">
+    <h3>📞 Chamada recebida</h3>
+    <p id="chamada-nome" style="color:#e0e0e0; margin-bottom: 20px;"></p>
+    <div class="modal-botoes">
+      <button class="btn-cancelar" onclick="recusarChamada()">Recusar</button>
+      <button class="btn-criar" onclick="aceitarChamada()" style="background-color:#2ecc71;">Aceitar</button>
+    </div>
+  </div>
+
+  <!-- PAINEL DE VOZ -->
+  <div class="voz-painel" id="voz-painel" style="display:none">
+    <div class="voz-header">
+      <span id="voz-titulo">🎙️ Canal de voz</span>
+      <button class="btn-sair-voz" onclick="sairVoz()">Sair</button>
+    </div>
+    <div class="voz-membros" id="voz-membros"></div>
+    <div class="voz-controles">
+      <button class="btn-mute" id="btn-mute" onclick="toggleMute()">🎙️ Mudo</button>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/chat.js"></script>
+  <script src="/js/voz.js"></script>
 </body>
 </html>

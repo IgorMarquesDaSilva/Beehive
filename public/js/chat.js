@@ -52,8 +52,12 @@ async function carregarCanais() {
     const div = document.createElement("div");
     div.classList.add("canal-item");
     div.setAttribute("data-canal-id", canal.id);
-    div.innerHTML = `# ${canal.nome} <span class="badge" id="badge-${canal.id}" style="display:none">●</span>`;
-    div.onclick = (event) => entrarCanal(canal, event);
+    div.innerHTML = `
+      <span onclick="entrarCanalTexto(${canal.id}, '${canal.nome}', this.parentElement)">
+        # ${canal.nome} <span class="badge" id="badge-${canal.id}" style="display:none">●</span>
+      </span>
+      <button class="btn-entrar-voz" data-canal-id="${canal.id}" onclick="entrarVoz(${canal.id}, '${canal.nome}')">🎙️ Entrar</button>
+    `;
     lista.appendChild(div);
   });
 }
@@ -94,20 +98,20 @@ function limparNotificacao(canalId) {
   }
 }
 
-function entrarCanal(canal, event) {
-  canalAtual = canal.id;
+function entrarCanalTexto(canalId, nomeCanal, el) {
+  canalAtual = canalId;
 
-  document.querySelectorAll(".canal-item").forEach((el) => el.classList.remove("ativo"));
-  event.currentTarget.classList.add("ativo");
+  document.querySelectorAll(".canal-item").forEach((item) => item.classList.remove("ativo"));
+  el.closest(".canal-item").classList.add("ativo");
 
-  document.getElementById("canal-ativo").innerText = `# ${canal.nome}`;
+  document.getElementById("canal-ativo").innerText = `# ${nomeCanal}`;
   document.getElementById("chat-mensagens").innerHTML = "";
   document.getElementById("digitando-texto").innerText = "";
 
-  limparNotificacao(canal.id);
+  limparNotificacao(canalId);
 
-  socket.emit("entrarCanal", canal.id);
-  carregarMensagens(canal.id);
+  socket.emit("entrarCanal", canalId);
+  carregarMensagens(canalId);
 }
 
 async function carregarMensagens(canalId) {

@@ -87,4 +87,19 @@ async function getUsuarios(req, res) {
   }
 }
 
-module.exports = { getCanais, getMensagens, criarCanal, apagarMensagem, getUsuarios };
+async function getMembrosVoz(req, res) {
+  const { canalId } = req.params;
+  try {
+    const [membros] = await db.query(
+      `SELECT u.id, u.nome FROM salas_voz sv
+       JOIN usuarios u ON sv.usuario_id = u.id
+       WHERE sv.canal_id = ?`,
+      [canalId]
+    );
+    res.json(membros);
+  } catch (err) {
+    res.status(500).json({ erro: "Erro ao buscar membros da voz" });
+  }
+}
+
+module.exports = { getCanais, getMensagens, criarCanal, apagarMensagem, getUsuarios, getMembrosVoz };
