@@ -74,6 +74,18 @@ async function inicializarBanco() {
           FOREIGN KEY (\`canal_id\`) REFERENCES \`canais\`(\`id\`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS \`salas_voz\` (
+          \`id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`canal_id\` int(11) NOT NULL,
+          \`usuario_id\` int(11) NOT NULL,
+          \`entrou_em\` datetime DEFAULT current_timestamp(),
+          PRIMARY KEY (\`id\`),
+          FOREIGN KEY (\`canal_id\`) REFERENCES \`canais\`(\`id\`),
+          FOREIGN KEY (\`usuario_id\`) REFERENCES \`usuarios\`(\`id\`),
+          UNIQUE KEY \`canal_usuario\` (\`canal_id\`, \`usuario_id\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
 
       await db.query(`
         INSERT IGNORE INTO \`canais\` (\`nome\`, \`descricao\`) VALUES
