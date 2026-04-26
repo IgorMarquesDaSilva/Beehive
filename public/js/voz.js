@@ -7,12 +7,28 @@ let chamadaParaSocketId = null;
 
 const iceServers = {
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" },
     {
-      urls: "turn:relay1.expressturn.com:3478",
-      username: "efCYBSCOTFNP3QWZ6T",
-      credential: "mfBbBMnXeVDsJ1aI",
+      urls: "stun:stun.relay.metered.ca:80",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80",
+      username: "cbd6f9ec1800a701202dfcc3",
+      credential: "0Mdgl8Y8vKqP0eNy",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80?transport=tcp",
+      username: "cbd6f9ec1800a701202dfcc3",
+      credential: "0Mdgl8Y8vKqP0eNy",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:443",
+      username: "cbd6f9ec1800a701202dfcc3",
+      credential: "0Mdgl8Y8vKqP0eNy",
+    },
+    {
+      urls: "turns:global.relay.metered.ca:443?transport=tcp",
+      username: "cbd6f9ec1800a701202dfcc3",
+      credential: "0Mdgl8Y8vKqP0eNy",
     },
   ],
 };
