@@ -19,7 +19,7 @@ async function iniciar() {
   socket = io({ auth: { token: data.token } });
 
   socket.on("mensagem", (data) => {
-    if (data.canalId === canalAtual) {
+    if (Number(data.canalId) === Number(canalAtual)) {
       adicionarMensagem(data.id, data.nome, data.texto, data.nome === usuario.nome, data.enviado_em);
     } else {
       adicionarNotificacao(data.canalId);
