@@ -10,6 +10,7 @@ let canalAtual = null;
 let socket = null;
 let timeoutDigitando = null;
 let usuarios = [];
+let notificacoes = {};
 
 async function iniciar() {
   const res = await fetch("/auth/token", { credentials: "include" });
@@ -18,7 +19,11 @@ async function iniciar() {
   socket = io({ auth: { token: data.token } });
 
   socket.on("mensagem", (data) => {
-    adicionarMensagem(data.id, data.nome, data.texto, data.nome === usuario.nome, data.enviado_em);
+    if (data.canalId === canalAtual) {
+      adicionarMensagem(data.id, data.nome, data.texto, data.nome === usuario.nome, data.enviado_em);
+    } else {
+      adicionarNotificacao(data.canalId);
+    }
   });
 
   socket.on("mensagemApagada", (id) => {
@@ -45,7 +50,8 @@ async function carregarCanais() {
   canais.forEach((canal) => {
     const div = document.createElement("div");
     div.classList.add("canal-item");
-    div.innerText = `# ${canal.nome}`;
+    div.setAttribute("data-canal-id", canal.id);
+    div.innerHTML = `# ${canal.nome} <span class="badge" id="badge-${canal.id}" style="display:none">●</span>`;
     div.onclick = (event) => entrarCanal(canal, event);
     lista.appendChild(div);
   });
@@ -56,15 +62,29 @@ async function carregarUsuarios() {
   usuarios = await res.json();
 }
 
+function adicionarNotificacao(canalId) {
+  notificacoes[canalId] = (notificacoes[canalId] || 0) + 1;
+  const badge = document.getElementById(`badge-${canalId}`);
+  if (badge) badge.style.display = "inline";
+}
+
+function limparNotificacao(canalId) {
+  notificacoes[canalId] = 0;
+  const badge = document.getElementById(`badge-${canalId}`);
+  if (badge) badge.style.display = "none";
+}
+
 function entrarCanal(canal, event) {
   canalAtual = canal.id;
 
   document.querySelectorAll(".canal-item").forEach((el) => el.classList.remove("ativo"));
-  event.target.classList.add("ativo");
+  event.currentTarget.classList.add("ativo");
 
   document.getElementById("canal-ativo").innerText = `# ${canal.nome}`;
   document.getElementById("chat-mensagens").innerHTML = "";
   document.getElementById("digitando-texto").innerText = "";
+
+  limparNotificacao(canal.id);
 
   socket.emit("entrarCanal", canal.id);
   carregarMensagens(canal.id);
@@ -77,7 +97,6 @@ async function carregarMensagens(canalId) {
 }
 
 function formatarTexto(texto) {
-  // destaca menções com @
   return texto.replace(/@(\w+)/g, '<span class="mencao">@$1</span>');
 }
 
@@ -141,7 +160,6 @@ function enviar() {
   fecharSugestoes();
 }
 
-// ========== MENÇÕES ==========
 function mostrarSugestoes(filtro) {
   const lista = document.getElementById("sugestoes-mencao");
   lista.innerHTML = "";
@@ -191,7 +209,6 @@ document.addEventListener("DOMContentLoaded", () => {
       socket.emit("parouDigitar", canalAtual);
     }, 2000);
 
-    // detecta @ para menções
     const valor = input.value;
     const ultimoArroba = valor.lastIndexOf("@");
 

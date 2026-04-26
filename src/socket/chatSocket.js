@@ -25,7 +25,6 @@ function initSocket(io) {
         if (room !== socket.id) socket.leave(room);
       });
       socket.join(`canal_${canalId}`);
-      console.log(`${usuario.nome} entrou no canal ${canalId}`);
     });
 
     socket.on("digitando", (canalId) => {
@@ -46,11 +45,12 @@ function initSocket(io) {
           [usuario.id, canalId, texto.trim()]
         );
 
-        io.to(`canal_${canalId}`).emit("mensagem", {
+        io.emit("mensagem", {
           id: result.insertId,
           nome: usuario.nome,
           texto: texto.trim(),
           enviado_em: new Date(),
+          canalId: canalId,
         });
       } catch (err) {
         console.error("Erro ao salvar mensagem:", err);
