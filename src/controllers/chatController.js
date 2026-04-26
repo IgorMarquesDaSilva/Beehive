@@ -64,7 +64,6 @@ async function apagarMensagem(req, res) {
 
     const mensagem = results[0];
 
-    // só o autor pode apagar
     if (mensagem.usuario_id !== req.usuario.id) {
       return res.status(403).json({ erro: "Você não pode apagar essa mensagem" });
     }
@@ -77,4 +76,15 @@ async function apagarMensagem(req, res) {
   }
 }
 
-module.exports = { getCanais, getMensagens, criarCanal, apagarMensagem };
+async function getUsuarios(req, res) {
+  try {
+    const [usuarios] = await db.query(
+      "SELECT id, nome FROM usuarios ORDER BY nome ASC"
+    );
+    res.json(usuarios);
+  } catch (err) {
+    res.status(500).json({ erro: "Erro ao buscar usuários" });
+  }
+}
+
+module.exports = { getCanais, getMensagens, criarCanal, apagarMensagem, getUsuarios };

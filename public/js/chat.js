@@ -9,6 +9,7 @@ document.getElementById("nome-usuario").innerText = usuario.nome;
 let canalAtual = null;
 let socket = null;
 let timeoutDigitando = null;
+let usuarios = [];
 
 async function iniciar() {
   const res = await fetch("/auth/token", { credentials: "include" });
@@ -50,6 +51,11 @@ async function carregarCanais() {
   });
 }
 
+async function carregarUsuarios() {
+  const res = await fetch("/chat/usuarios", { credentials: "include" });
+  usuarios = await res.json();
+}
+
 function entrarCanal(canal, event) {
   canalAtual = canal.id;
 
@@ -70,6 +76,11 @@ async function carregarMensagens(canalId) {
   mensagens.forEach((m) => adicionarMensagem(m.id, m.nome, m.texto, m.usuario_id === usuario.id, m.enviado_em));
 }
 
+function formatarTexto(texto) {
+  // destaca menções com @
+  return texto.replace(/@(\w+)/g, '<span class="mencao">@$1</span>');
+}
+
 function adicionarMensagem(id, nome, texto, propria = false, enviado_em = null) {
   const div = document.createElement("div");
   div.classList.add("mensagem");
@@ -87,7 +98,7 @@ function adicionarMensagem(id, nome, texto, propria = false, enviado_em = null) 
   div.innerHTML = `
     <span class="autor">${nome} <span class="hora">${hora}</span></span>
     <div class="balao-wrapper">
-      <div class="balao">${texto}</div>
+      <div class="balao">${formatarTexto(texto)}</div>
       ${btnApagar}
     </div>
   `;
@@ -127,6 +138,45 @@ function enviar() {
   socket.emit("mensagem", { texto, canalId: canalAtual });
   socket.emit("parouDigitar", canalAtual);
   input.value = "";
+  fecharSugestoes();
+}
+
+// ========== MENÇÕES ==========
+function mostrarSugestoes(filtro) {
+  const lista = document.getElementById("sugestoes-mencao");
+  lista.innerHTML = "";
+
+  const filtrados = usuarios.filter((u) =>
+    u.nome.toLowerCase().includes(filtro.toLowerCase()) && u.nome !== usuario.nome
+  );
+
+  if (filtrados.length === 0) {
+    lista.style.display = "none";
+    return;
+  }
+
+  filtrados.forEach((u) => {
+    const div = document.createElement("div");
+    div.classList.add("sugestao-item");
+    div.innerText = u.nome;
+    div.onclick = () => inserirMencao(u.nome);
+    lista.appendChild(div);
+  });
+
+  lista.style.display = "block";
+}
+
+function fecharSugestoes() {
+  document.getElementById("sugestoes-mencao").style.display = "none";
+}
+
+function inserirMencao(nome) {
+  const input = document.getElementById("msg-input");
+  const valor = input.value;
+  const ultimoArroba = valor.lastIndexOf("@");
+  input.value = valor.substring(0, ultimoArroba) + `@${nome} `;
+  input.focus();
+  fecharSugestoes();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -136,11 +186,32 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!canalAtual) return;
 
     socket.emit("digitando", canalAtual);
-
     clearTimeout(timeoutDigitando);
     timeoutDigitando = setTimeout(() => {
       socket.emit("parouDigitar", canalAtual);
     }, 2000);
+
+    // detecta @ para menções
+    const valor = input.value;
+    const ultimoArroba = valor.lastIndexOf("@");
+
+    if (ultimoArroba !== -1) {
+      const filtro = valor.substring(ultimoArroba + 1);
+      if (!filtro.includes(" ")) {
+        mostrarSugestoes(filtro);
+        return;
+      }
+    }
+
+    fecharSugestoes();
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") fecharSugestoes();
+    if (e.key === "Enter" && !e.shiftKey) {
+      enviar();
+      e.preventDefault();
+    }
   });
 });
 
@@ -192,3 +263,4 @@ async function logout() {
 
 iniciar();
 carregarCanais();
+carregarUsuarios();

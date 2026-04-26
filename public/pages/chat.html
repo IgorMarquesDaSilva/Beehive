@@ -42,12 +42,14 @@
       </div>
 
       <div class="chat-input">
-        <input
-          type="text"
-          id="msg-input"
-          placeholder="Digite sua mensagem..."
-          onkeydown="if(event.key === 'Enter') enviar()"
-        />
+        <div class="input-wrapper">
+          <div id="sugestoes-mencao" class="sugestoes-mencao"></div>
+          <input
+            type="text"
+            id="msg-input"
+            placeholder="Digite sua mensagem... (use @ para mencionar)"
+          />
+        </div>
         <button onclick="enviar()">Enviar</button>
       </div>
     </div>
