@@ -11,12 +11,14 @@ let socket = null;
 let timeoutDigitando = null;
 let usuarios = [];
 let notificacoes = {};
+let mencoes = {};
 
 async function iniciar() {
   const res = await fetch("/auth/token", { credentials: "include" });
   const data = await res.json();
 
   socket = io({ auth: { token: data.token } });
+  window.socket = socket;
 
   socket.on("mensagem", (data) => {
     if (Number(data.canalId) === Number(canalAtual)) {
@@ -38,6 +40,81 @@ async function iniciar() {
 
   socket.on("parouDigitar", () => {
     document.getElementById("digitando-texto").innerText = "";
+  });
+
+  // ========== EVENTOS DE VOZ ==========
+  socket.on("membrosVoz", async (membros) => {
+    membros.forEach(async (m) => {
+      adicionarMembroVoz(m.nome, m.socketId);
+      await criarPeer(m.socketId, true);
+    });
+    atualizarBotoesVoz();
+  });
+
+  socket.on("usuarioEntroupVoz", async ({ socketId, nome }) => {
+    adicionarMembroVoz(nome, socketId);
+    if (canalVozAtual) {
+      await criarPeer(socketId, false);
+    }
+    atualizarBotoesVoz();
+  });
+
+  socket.on("usuarioSaiuVoz", ({ socketId }) => {
+    removerMembroVoz(socketId);
+    removerAudio(socketId);
+    atualizarBotoesVoz();
+  });
+
+  socket.on("offer", async ({ offer, de, nome }) => {
+    if (!localStream) return;
+    const peer = await criarPeer(de, false);
+    await peer.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await peer.createAnswer();
+    await peer.setLocalDescription(answer);
+    socket.emit("answer", { answer, para: de });
+  });
+
+  socket.on("answer", async ({ answer, de }) => {
+    const peer = peers[de];
+    if (peer) await peer.setRemoteDescription(new RTCSessionDescription(answer));
+  });
+
+  socket.on("iceCandidate", async ({ candidate, de }) => {
+    const peer = peers[de];
+    if (peer) await peer.addIceCandidate(new RTCIceCandidate(candidate));
+  });
+
+  socket.on("atualizarVoz", async ({ canalId }) => {
+    await carregarMembrosVoz(canalId);
+  });
+
+  socket.on("chamadaRecebida", ({ de, nome }) => {
+    chamadaDeSocketId = de;
+    document.getElementById("chamada-nome").innerText = `${nome} está te chamando...`;
+    document.getElementById("modal-chamada").style.display = "block";
+    document.getElementById("modal-chamada-overlay").style.display = "block";
+  });
+
+  socket.on("chamadaAceita", async ({ de }) => {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(async (stream) => {
+      localStream = stream;
+      await criarPeer(de, true);
+    });
+  });
+
+  socket.on("chamadaRecusada", () => {
+    alert("Chamada recusada.");
+    chamadaParaSocketId = null;
+  });
+
+  socket.on("chamadaEncerrada", () => {
+    alert("Chamada encerrada.");
+    if (localStream) {
+      localStream.getTracks().forEach((t) => t.stop());
+      localStream = null;
+    }
+    Object.values(peers).forEach((p) => p.close());
+    peers = {};
   });
 }
 
@@ -66,8 +143,6 @@ async function carregarUsuarios() {
   const res = await fetch("/chat/usuarios", { credentials: "include" });
   usuarios = await res.json();
 }
-
-let mencoes = {};
 
 function adicionarNotificacao(canalId, foiMencionado = false) {
   notificacoes[canalId] = (notificacoes[canalId] || 0) + 1;

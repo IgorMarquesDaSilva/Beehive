@@ -3,6 +3,7 @@ let peers = {};
 let canalVozAtual = null;
 let mutado = false;
 let chamadaDeSocketId = null;
+let chamadaParaSocketId = null;
 
 const iceServers = {
   iceServers: [
@@ -26,11 +27,8 @@ const iceServers = {
   ],
 };
 
-// ========== CANAL DE VOZ ==========
-async function entrarVoz(canalId, nomCanal) {
-  if (canalVozAtual) {
-    await sairVoz();
-  }
+async function entrarVoz(canalId, nomeCanal) {
+  if (canalVozAtual) await sairVoz();
 
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -42,11 +40,12 @@ async function entrarVoz(canalId, nomCanal) {
   canalVozAtual = canalId;
   mutado = false;
 
-  document.getElementById("voz-painel").style.display = "block";
-  document.getElementById("voz-titulo").innerText = `🎙️ # ${nomCanal}`;
+  document.getElementById("voz-painel").style.display = "flex";
+  document.getElementById("voz-titulo").innerText = `🎙️ # ${nomeCanal}`;
   document.getElementById("btn-mute").innerText = "🎙️ Mudo";
 
   socket.emit("entrarVoz", canalId);
+  atualizarBotoesVoz();
 }
 
 async function sairVoz() {
@@ -72,14 +71,16 @@ function toggleMute() {
   if (!localStream) return;
   mutado = !mutado;
   localStream.getAudioTracks().forEach((t) => (t.enabled = !mutado));
-  document.getElementById("btn-mute").innerText = mutado ? "🔇 Desmutado" : "🎙️ Mudo";
+  document.getElementById("btn-mute").innerText = mutado ? "🔇 Mudo" : "🎙️ Ativo";
 }
 
 async function criarPeer(socketId, iniciador) {
   const peer = new RTCPeerConnection(iceServers);
   peers[socketId] = peer;
 
-  localStream.getTracks().forEach((track) => peer.addTrack(track, localStream));
+  if (localStream) {
+    localStream.getTracks().forEach((track) => peer.addTrack(track, localStream));
+  }
 
   peer.onicecandidate = (e) => {
     if (e.candidate) {
@@ -121,10 +122,16 @@ function removerAudio(socketId) {
 }
 
 function adicionarMembroVoz(nome, socketId) {
+  const existing = document.getElementById(`membro-${socketId}`);
+  if (existing) return;
+
   const div = document.createElement("div");
   div.classList.add("voz-membro");
   div.id = `membro-${socketId}`;
-  div.innerHTML = `<span class="voz-avatar">${nome[0].toUpperCase()}</span><span>${nome}</span>`;
+  div.innerHTML = `
+    <span class="voz-avatar">${nome[0].toUpperCase()}</span>
+    <span>${nome}</span>
+  `;
   document.getElementById("voz-membros").appendChild(div);
 }
 
@@ -146,13 +153,19 @@ function atualizarBotoesVoz() {
   });
 }
 
-// ========== CHAMADA PRIVADA ==========
-let chamadaParaSocketId = null;
+async function carregarMembrosVoz(canalId) {
+  const res = await fetch(`/chat/voz/${canalId}`, { credentials: "include" });
+  const membros = await res.json();
 
-function iniciarChamadaPrivada(paraSocketId, nomeUsuario) {
-  chamadaParaSocketId = paraSocketId;
-  socket.emit("chamarUsuario", { paraSocketId, nome: nomeUsuario });
-  alert(`Chamando ${nomeUsuario}...`);
+  const lista = document.getElementById("lista-voz");
+  lista.innerHTML = "";
+
+  membros.forEach((m) => {
+    const div = document.createElement("div");
+    div.classList.add("canal-item", "voz-item");
+    div.innerHTML = `<span>🔊 ${m.nome}</span>`;
+    lista.appendChild(div);
+  });
 }
 
 function aceitarChamada() {
@@ -172,97 +185,4 @@ function recusarChamada() {
   document.getElementById("modal-chamada-overlay").style.display = "none";
   socket.emit("recusarChamada", { paraSocketId: chamadaDeSocketId });
   chamadaDeSocketId = null;
-}
-
-// ========== EVENTOS DO SOCKET ==========
-socket.on("membrosVoz", async (membros) => {
-  membros.forEach(async (m) => {
-    adicionarMembroVoz(m.nome, m.socketId);
-    await criarPeer(m.socketId, true);
-  });
-  atualizarBotoesVoz();
-});
-
-socket.on("usuarioEntroupVoz", async ({ socketId, nome }) => {
-  adicionarMembroVoz(nome, socketId);
-  if (canalVozAtual) {
-    await criarPeer(socketId, false);
-  }
-  atualizarBotoesVoz();
-});
-
-socket.on("usuarioSaiuVoz", ({ socketId }) => {
-  removerMembroVoz(socketId);
-  removerAudio(socketId);
-  atualizarBotoesVoz();
-});
-
-socket.on("offer", async ({ offer, de, nome }) => {
-  if (!localStream) return;
-  const peer = await criarPeer(de, false);
-  await peer.setRemoteDescription(new RTCSessionDescription(offer));
-  const answer = await peer.createAnswer();
-  await peer.setLocalDescription(answer);
-  socket.emit("answer", { answer, para: de });
-});
-
-socket.on("answer", async ({ answer, de }) => {
-  const peer = peers[de];
-  if (peer) await peer.setRemoteDescription(new RTCSessionDescription(answer));
-});
-
-socket.on("iceCandidate", async ({ candidate, de }) => {
-  const peer = peers[de];
-  if (peer) await peer.addIceCandidate(new RTCIceCandidate(candidate));
-});
-
-socket.on("atualizarVoz", async ({ canalId }) => {
-  await carregarMembrosVoz(canalId);
-});
-
-socket.on("chamadaRecebida", ({ de, nome }) => {
-  chamadaDeSocketId = de;
-  document.getElementById("chamada-nome").innerText = `${nome} está te chamando...`;
-  document.getElementById("modal-chamada").style.display = "block";
-  document.getElementById("modal-chamada-overlay").style.display = "block";
-});
-
-socket.on("chamadaAceita", async ({ de }) => {
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(async (stream) => {
-    localStream = stream;
-    await criarPeer(de, true);
-  });
-});
-
-socket.on("chamadaRecusada", () => {
-  alert("Chamada recusada.");
-  chamadaParaSocketId = null;
-});
-
-socket.on("chamadaEncerrada", () => {
-  alert("Chamada encerrada.");
-  if (localStream) {
-    localStream.getTracks().forEach((t) => t.stop());
-    localStream = null;
-  }
-  Object.values(peers).forEach((p) => p.close());
-  peers = {};
-});
-
-// ========== MEMBROS DO CANAL DE VOZ ==========
-async function carregarMembrosVoz(canalId) {
-  const res = await fetch(`/chat/voz/${canalId}`, { credentials: "include" });
-  const membros = await res.json();
-
-  const lista = document.getElementById("lista-voz");
-  lista.innerHTML = "";
-
-  membros.forEach((m) => {
-    const div = document.createElement("div");
-    div.classList.add("canal-item", "voz-item");
-    div.innerHTML = `
-      <span>🔊 ${m.nome}</span>
-    `;
-    lista.appendChild(div);
-  });
 }
