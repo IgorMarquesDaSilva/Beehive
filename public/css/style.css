@@ -654,11 +654,23 @@ body {
   font-weight: bold;
 }
 /* ========== NOTIFICAÇÕES ========== */
+/* ========== NOTIFICAÇÕES ========== */
 .badge {
-  color: #f5a623;
+  display: none;
   font-size: 10px;
-  margin-left: 4px;
-  animation: piscar 1s infinite;
+  font-weight: bold;
+  border-radius: 10px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  min-width: 18px;
+  text-align: center;
+  background-color: #f5a623;
+  color: #1a1a2e;
+}
+
+.badge.mencao {
+  background-color: #e74c3c;
+  color: #fff;
 }
 
 @keyframes piscar {

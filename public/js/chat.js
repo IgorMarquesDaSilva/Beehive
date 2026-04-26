@@ -22,7 +22,8 @@ async function iniciar() {
     if (Number(data.canalId) === Number(canalAtual)) {
       adicionarMensagem(data.id, data.nome, data.texto, data.nome === usuario.nome, data.enviado_em);
     } else {
-      adicionarNotificacao(data.canalId);
+      const foiMencionado = data.texto.toLowerCase().includes(`@${usuario.nome.toLowerCase()}`);
+      adicionarNotificacao(data.canalId, foiMencionado);
     }
   });
 
@@ -62,16 +63,35 @@ async function carregarUsuarios() {
   usuarios = await res.json();
 }
 
-function adicionarNotificacao(canalId) {
+let mencoes = {};
+
+function adicionarNotificacao(canalId, foiMencionado = false) {
   notificacoes[canalId] = (notificacoes[canalId] || 0) + 1;
+  if (foiMencionado) mencoes[canalId] = true;
+
   const badge = document.getElementById(`badge-${canalId}`);
-  if (badge) badge.style.display = "inline";
+  if (!badge) return;
+
+  badge.style.display = "inline";
+
+  if (mencoes[canalId]) {
+    badge.innerText = "@";
+    badge.classList.add("mencao");
+  } else {
+    badge.innerText = notificacoes[canalId];
+    badge.classList.remove("mencao");
+  }
 }
 
 function limparNotificacao(canalId) {
   notificacoes[canalId] = 0;
+  mencoes[canalId] = false;
+
   const badge = document.getElementById(`badge-${canalId}`);
-  if (badge) badge.style.display = "none";
+  if (badge) {
+    badge.style.display = "none";
+    badge.classList.remove("mencao");
+  }
 }
 
 function entrarCanal(canal, event) {
