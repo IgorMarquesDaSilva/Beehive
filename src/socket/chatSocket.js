@@ -4,6 +4,24 @@ const jwt = require("jsonwebtoken");
 function initSocket(io) {
   const usuariosOnline = new Map();
 
+  function emitirUsuariosOnline() {
+    const lista = Array.from(usuariosOnline.values());
+
+    const usuariosUnicos = [];
+
+    lista.forEach((usuario) => {
+      const jaExiste = usuariosUnicos.some(
+        (u) => Number(u.id) === Number(usuario.id)
+      );
+
+      if (!jaExiste) {
+        usuariosUnicos.push(usuario);
+      }
+    });
+
+    io.emit("usuariosOnline", usuariosUnicos);
+  }
+
   io.on("connection", (socket) => {
     const token = socket.handshake.auth?.token;
 
@@ -24,7 +42,10 @@ function initSocket(io) {
     usuariosOnline.set(socket.id, {
       id: usuario.id,
       nome: usuario.nome,
+      emVoz: false,
     });
+
+    emitirUsuariosOnline();
 
     console.log(`Usuário conectado: ${usuario.nome}`);
 
@@ -113,8 +134,16 @@ function initSocket(io) {
 
         socket.join(`voz_${canalId}`);
 
-        const membros = [];
+        const dadosOnline = usuariosOnline.get(socket.id);
 
+        if (dadosOnline) {
+          dadosOnline.emVoz = true;
+          usuariosOnline.set(socket.id, dadosOnline);
+        }
+
+        emitirUsuariosOnline();
+
+        const membros = [];
         const socketsNaSala = await io.in(`voz_${canalId}`).fetchSockets();
 
         socketsNaSala.forEach((s) => {
@@ -155,6 +184,15 @@ function initSocket(io) {
         );
 
         socket.leave(`voz_${canalId}`);
+
+        const dadosOnline = usuariosOnline.get(socket.id);
+
+        if (dadosOnline) {
+          dadosOnline.emVoz = false;
+          usuariosOnline.set(socket.id, dadosOnline);
+        }
+
+        emitirUsuariosOnline();
 
         io.to(`voz_${canalId}`).emit("usuarioSaiuVoz", {
           socketId: socket.id,
@@ -204,6 +242,7 @@ function initSocket(io) {
       console.log(`Usuário desconectado: ${usuario.nome}`);
 
       usuariosOnline.delete(socket.id);
+      emitirUsuariosOnline();
 
       try {
         await db.query("DELETE FROM salas_voz WHERE usuario_id = ?", [

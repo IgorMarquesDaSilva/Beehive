@@ -46,6 +46,9 @@ async function iniciar() {
         socket.emit("entrarCanal", canalAtual);
       }
     });
+    socket.on("usuariosOnline", (lista) => {
+      renderizarUsuariosOnline(lista);
+    });
 
     socket.on("disconnect", () => {
       console.log("Socket desconectado");
@@ -191,6 +194,7 @@ async function iniciar() {
   }
 }
 
+
 async function carregarCanais() {
   try {
     const res = await fetch("/chat/canais", { credentials: "include" });
@@ -240,6 +244,58 @@ async function carregarCanais() {
     console.error(err);
     alert("Erro ao carregar canais.");
   }
+}
+function renderizarUsuariosOnline(lista) {
+  const container = document.getElementById("lista-online");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (!Array.isArray(lista)) return;
+
+  const usuariosFiltrados = lista.filter((u) => Number(u.id) !== Number(usuario.id));
+
+  usuariosFiltrados.forEach((u) => {
+    const div = document.createElement("div");
+    div.classList.add("online-member");
+
+    const avatar = document.createElement("div");
+    avatar.classList.add("avatar");
+    avatar.innerText = gerarIniciais(u.nome);
+
+    const info = document.createElement("div");
+    info.classList.add("online-member-info");
+
+    const nome = document.createElement("strong");
+    nome.innerText = u.nome;
+
+    const status = document.createElement("small");
+    status.innerText = u.emVoz ? "Em chamada" : "Online";
+
+    const bolinha = document.createElement("span");
+    bolinha.classList.add("online-dot");
+
+    info.appendChild(nome);
+    info.appendChild(status);
+
+    div.appendChild(avatar);
+    div.appendChild(info);
+    div.appendChild(bolinha);
+
+    container.appendChild(div);
+  });
+}
+
+function gerarIniciais(nome) {
+  if (!nome) return "?";
+
+  const partes = nome.trim().split(" ");
+
+  if (partes.length === 1) {
+    return partes[0].charAt(0).toUpperCase();
+  }
+
+  return `${partes[0].charAt(0)}${partes[partes.length - 1].charAt(0)}`.toUpperCase();
 }
 
 async function carregarUsuarios() {

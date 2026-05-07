@@ -686,3 +686,35 @@ body {
     align-items: flex-start;
   }
 }
+.online-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.online-member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px;
+  border-radius: 8px;
+  color: #d8dbea;
+  font-size: 13px;
+}
+
+.online-member:hover {
+  background: #292b37;
+}
+
+.online-member-info strong {
+  display: block;
+  font-size: 13px;
+  color: #fff;
+}
+
+.online-member-info small {
+  display: block;
+  font-size: 11px;
+  color: #8f94a8;
+}
