@@ -2,8 +2,7 @@ const db = require("../config/db");
 const jwt = require("jsonwebtoken");
 
 function initSocket(io) {
-  // armazena usuários em chamadas privadas
-  const chamadasPrivadas = {};
+  const usuariosOnline = new Map();
 
   io.on("connection", (socket) => {
     const token = socket.handshake.auth?.token;
@@ -14,46 +13,71 @@ function initSocket(io) {
     }
 
     let usuario;
+
     try {
       usuario = jwt.verify(token, process.env.JWT_SECRET);
-    } catch {
+    } catch (err) {
       socket.disconnect();
       return;
     }
 
+    usuariosOnline.set(socket.id, {
+      id: usuario.id,
+      nome: usuario.nome,
+    });
+
     console.log(`Usuário conectado: ${usuario.nome}`);
 
     socket.on("entrarCanal", (canalId) => {
+      if (!canalId) return;
+
       socket.rooms.forEach((room) => {
-        if (room !== socket.id && !room.startsWith("voz_")) socket.leave(room);
+        if (room !== socket.id && room.startsWith("canal_")) {
+          socket.leave(room);
+        }
       });
+
       socket.join(`canal_${canalId}`);
     });
 
     socket.on("digitando", (canalId) => {
-      socket.to(`canal_${canalId}`).emit("digitando", { nome: usuario.nome });
+      if (!canalId) return;
+
+      socket.to(`canal_${canalId}`).emit("digitando", {
+        nome: usuario.nome,
+      });
     });
 
     socket.on("parouDigitar", (canalId) => {
-      socket.to(`canal_${canalId}`).emit("parouDigitar", { nome: usuario.nome });
+      if (!canalId) return;
+
+      socket.to(`canal_${canalId}`).emit("parouDigitar", {
+        nome: usuario.nome,
+      });
     });
 
     socket.on("mensagem", async ({ texto, canalId }) => {
-      if (!texto || typeof texto !== "string" || texto.trim() === "") return;
       if (!canalId) return;
+      if (!texto || typeof texto !== "string") return;
+
+      const textoLimpo = texto.trim();
+
+      if (textoLimpo === "") return;
+      if (textoLimpo.length > 2000) return;
 
       try {
         const [result] = await db.query(
           "INSERT INTO mensagens (usuario_id, canal_id, texto) VALUES (?, ?, ?)",
-          [usuario.id, canalId, texto.trim()]
+          [usuario.id, canalId, textoLimpo]
         );
 
-        io.emit("mensagem", {
+        io.to(`canal_${canalId}`).emit("mensagem", {
           id: result.insertId,
           nome: usuario.nome,
-          texto: texto.trim(),
+          usuarioId: usuario.id,
+          texto: textoLimpo,
           enviado_em: new Date(),
-          canalId: canalId,
+          canalId: Number(canalId),
         });
       } catch (err) {
         console.error("Erro ao salvar mensagem:", err);
@@ -61,42 +85,69 @@ function initSocket(io) {
     });
 
     socket.on("mensagemApagada", ({ id, canalId }) => {
+      if (!id || !canalId) return;
+
       io.to(`canal_${canalId}`).emit("mensagemApagada", id);
     });
 
     // ========== VOZ EM CANAL ==========
+
     socket.on("entrarVoz", async (canalId) => {
+      if (!canalId) return;
+
       try {
+        await db.query("DELETE FROM salas_voz WHERE usuario_id = ?", [
+          usuario.id,
+        ]);
+
         await db.query(
           "INSERT IGNORE INTO salas_voz (canal_id, usuario_id) VALUES (?, ?)",
           [canalId, usuario.id]
         );
 
-        socket.join(`voz_${canalId}`);
-
-        // avisa todos no canal de voz que alguém entrou
-        socket.to(`voz_${canalId}`).emit("usuarioEntroupVoz", {
-          socketId: socket.id,
-          nome: usuario.nome,
-          usuarioId: usuario.id,
+        socket.rooms.forEach((room) => {
+          if (room !== socket.id && room.startsWith("voz_")) {
+            socket.leave(room);
+          }
         });
 
-        // busca quem já está na sala
-        const [membros] = await db.query(
-          `SELECT u.id, u.nome FROM salas_voz sv
-           JOIN usuarios u ON sv.usuario_id = u.id
-           WHERE sv.canal_id = ? AND sv.usuario_id != ?`,
-          [canalId, usuario.id]
-        );
+        socket.join(`voz_${canalId}`);
+
+        const membros = [];
+
+        const socketsNaSala = await io.in(`voz_${canalId}`).fetchSockets();
+
+        socketsNaSala.forEach((s) => {
+          const dadosUsuario = usuariosOnline.get(s.id);
+
+          if (dadosUsuario && s.id !== socket.id) {
+            membros.push({
+              socketId: s.id,
+              usuarioId: dadosUsuario.id,
+              nome: dadosUsuario.nome,
+            });
+          }
+        });
 
         socket.emit("membrosVoz", membros);
-        io.to(`canal_${canalId}`).emit("atualizarVoz", { canalId });
+
+        socket.to(`voz_${canalId}`).emit("usuarioEntrouVoz", {
+          socketId: socket.id,
+          usuarioId: usuario.id,
+          nome: usuario.nome,
+        });
+
+        io.to(`canal_${canalId}`).emit("atualizarVoz", {
+          canalId: Number(canalId),
+        });
       } catch (err) {
         console.error("Erro ao entrar na voz:", err);
       }
     });
 
     socket.on("sairVoz", async (canalId) => {
+      if (!canalId) return;
+
       try {
         await db.query(
           "DELETE FROM salas_voz WHERE canal_id = ? AND usuario_id = ?",
@@ -104,59 +155,68 @@ function initSocket(io) {
         );
 
         socket.leave(`voz_${canalId}`);
+
         io.to(`voz_${canalId}`).emit("usuarioSaiuVoz", {
           socketId: socket.id,
-          nome: usuario.nome,
           usuarioId: usuario.id,
+          nome: usuario.nome,
         });
 
-        io.to(`canal_${canalId}`).emit("atualizarVoz", { canalId });
+        io.to(`canal_${canalId}`).emit("atualizarVoz", {
+          canalId: Number(canalId),
+        });
       } catch (err) {
         console.error("Erro ao sair da voz:", err);
       }
     });
 
     // ========== WEBRTC SINALIZAÇÃO ==========
+
     socket.on("offer", ({ offer, para }) => {
-      io.to(para).emit("offer", { offer, de: socket.id, nome: usuario.nome });
-    });
+      if (!offer || !para) return;
 
-    socket.on("answer", ({ answer, para }) => {
-      io.to(para).emit("answer", { answer, de: socket.id });
-    });
-
-    socket.on("iceCandidate", ({ candidate, para }) => {
-      io.to(para).emit("iceCandidate", { candidate, de: socket.id });
-    });
-
-    // ========== CHAMADA PRIVADA ==========
-    socket.on("chamarUsuario", ({ paraSocketId, nome }) => {
-      io.to(paraSocketId).emit("chamadaRecebida", {
+      io.to(para).emit("offer", {
+        offer,
         de: socket.id,
         nome: usuario.nome,
       });
     });
 
-    socket.on("aceitarChamada", ({ paraSocketId }) => {
-      io.to(paraSocketId).emit("chamadaAceita", { de: socket.id });
+    socket.on("answer", ({ answer, para }) => {
+      if (!answer || !para) return;
+
+      io.to(para).emit("answer", {
+        answer,
+        de: socket.id,
+      });
     });
 
-    socket.on("recusarChamada", ({ paraSocketId }) => {
-      io.to(paraSocketId).emit("chamadaRecusada", { de: socket.id });
-    });
+    socket.on("iceCandidate", ({ candidate, para }) => {
+      if (!candidate || !para) return;
 
-    socket.on("encerrarChamada", ({ paraSocketId }) => {
-      io.to(paraSocketId).emit("chamadaEncerrada");
+      io.to(para).emit("iceCandidate", {
+        candidate,
+        de: socket.id,
+      });
     });
 
     socket.on("disconnect", async () => {
       console.log(`Usuário desconectado: ${usuario.nome}`);
+
+      usuariosOnline.delete(socket.id);
+
       try {
-        await db.query(
-          "DELETE FROM salas_voz WHERE usuario_id = ?",
-          [usuario.id]
-        );
-        io.emit("usuarioSaiuVoz", { socketId: socket.id, usuarioId: usuario.id });
+        await db.query("DELETE FROM salas_voz WHERE usuario_id = ?", [
+          usuario.id,
+        ]);
+
+        io.emit("usuarioSaiuVoz", {
+          socketId: socket.id,
+          usuarioId: usuario.id,
+          nome: usuario.nome,
+        });
+
+        io.emit("atualizarVoz", {});
       } catch (err) {
         console.error("Erro ao limpar voz:", err);
       }

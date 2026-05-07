@@ -14,139 +14,255 @@ let notificacoes = {};
 let mencoes = {};
 
 async function iniciar() {
-  const res = await fetch("/auth/token", { credentials: "include" });
-  const data = await res.json();
+  try {
+    const res = await fetch("/auth/token", { credentials: "include" });
 
-  socket = io({ auth: { token: data.token } });
-  window.socket = socket;
-
-  socket.on("mensagem", (data) => {
-    if (Number(data.canalId) === Number(canalAtual)) {
-      adicionarMensagem(data.id, data.nome, data.texto, data.nome === usuario.nome, data.enviado_em);
-    } else {
-      const foiMencionado = data.texto.toLowerCase().includes(`@${usuario.nome.toLowerCase()}`);
-      adicionarNotificacao(data.canalId, foiMencionado);
+    if (!res.ok) {
+      localStorage.removeItem("usuario");
+      window.location.href = "/pages/login.html";
+      return;
     }
-  });
 
-  socket.on("mensagemApagada", (id) => {
-    const el = document.querySelector(`[data-id="${id}"]`);
-    if (el) el.remove();
-  });
+    const data = await res.json();
 
-  socket.on("digitando", (data) => {
-    document.getElementById("digitando-texto").innerText = `${data.nome} está digitando...`;
-  });
+    if (!data.token) {
+      localStorage.removeItem("usuario");
+      window.location.href = "/pages/login.html";
+      return;
+    }
 
-  socket.on("parouDigitar", () => {
-    document.getElementById("digitando-texto").innerText = "";
-  });
-
-  // ========== EVENTOS DE VOZ ==========
-  socket.on("membrosVoz", async (membros) => {
-    membros.forEach(async (m) => {
-      adicionarMembroVoz(m.nome, m.socketId);
-      await criarPeer(m.socketId, true);
+    socket = io({
+      auth: {
+        token: data.token,
+      },
     });
-    atualizarBotoesVoz();
-  });
 
-  socket.on("usuarioEntroupVoz", async ({ socketId, nome }) => {
-    adicionarMembroVoz(nome, socketId);
-    if (canalVozAtual) {
-      await criarPeer(socketId, false);
-    }
-    atualizarBotoesVoz();
-  });
+    window.socket = socket;
 
-  socket.on("usuarioSaiuVoz", ({ socketId }) => {
-    removerMembroVoz(socketId);
-    removerAudio(socketId);
-    atualizarBotoesVoz();
-  });
+    socket.on("connect", () => {
+      console.log("Socket conectado:", socket.id);
 
-  socket.on("offer", async ({ offer, de, nome }) => {
-    if (!localStream) return;
-    const peer = await criarPeer(de, false);
-    await peer.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await peer.createAnswer();
-    await peer.setLocalDescription(answer);
-    socket.emit("answer", { answer, para: de });
-  });
-
-  socket.on("answer", async ({ answer, de }) => {
-    const peer = peers[de];
-    if (peer) await peer.setRemoteDescription(new RTCSessionDescription(answer));
-  });
-
-  socket.on("iceCandidate", async ({ candidate, de }) => {
-    const peer = peers[de];
-    if (peer) await peer.addIceCandidate(new RTCIceCandidate(candidate));
-  });
-
-  socket.on("atualizarVoz", async ({ canalId }) => {
-    await carregarMembrosVoz(canalId);
-  });
-
-  socket.on("chamadaRecebida", ({ de, nome }) => {
-    chamadaDeSocketId = de;
-    document.getElementById("chamada-nome").innerText = `${nome} está te chamando...`;
-    document.getElementById("modal-chamada").style.display = "block";
-    document.getElementById("modal-chamada-overlay").style.display = "block";
-  });
-
-  socket.on("chamadaAceita", async ({ de }) => {
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(async (stream) => {
-      localStream = stream;
-      await criarPeer(de, true);
+      if (canalAtual) {
+        socket.emit("entrarCanal", canalAtual);
+      }
     });
-  });
 
-  socket.on("chamadaRecusada", () => {
-    alert("Chamada recusada.");
-    chamadaParaSocketId = null;
-  });
+    socket.on("disconnect", () => {
+      console.log("Socket desconectado");
+    });
 
-  socket.on("chamadaEncerrada", () => {
-    alert("Chamada encerrada.");
-    if (localStream) {
-      localStream.getTracks().forEach((t) => t.stop());
-      localStream = null;
-    }
-    Object.values(peers).forEach((p) => p.close());
-    peers = {};
-  });
+    socket.on("connect_error", () => {
+      alert("Sua sessão expirou. Faça login novamente.");
+      localStorage.removeItem("usuario");
+      window.location.href = "/pages/login.html";
+    });
+
+    socket.on("mensagem", (data) => {
+      if (Number(data.canalId) === Number(canalAtual)) {
+        adicionarMensagem(
+          data.id,
+          data.nome,
+          data.texto,
+          Number(data.usuarioId) === Number(usuario.id) || data.nome === usuario.nome,
+          data.enviado_em
+        );
+      } else {
+        const foiMencionado = verificarMencao(data.texto, usuario.nome);
+        adicionarNotificacao(data.canalId, foiMencionado);
+      }
+    });
+
+    socket.on("mensagemApagada", (id) => {
+      const el = document.querySelector(`[data-id="${id}"]`);
+      if (el) el.remove();
+    });
+
+    socket.on("digitando", (data) => {
+      document.getElementById("digitando-texto").innerText = `${data.nome} está digitando...`;
+    });
+
+    socket.on("parouDigitar", () => {
+      document.getElementById("digitando-texto").innerText = "";
+    });
+
+    // ========== EVENTOS DE VOZ ==========
+
+    socket.on("membrosVoz", async (membros) => {
+      if (!Array.isArray(membros)) return;
+
+      for (const m of membros) {
+        if (!m.socketId) continue;
+
+        adicionarMembroVoz(m.nome, m.socketId);
+        await criarPeer(m.socketId, true);
+      }
+
+      atualizarBotoesVoz();
+    });
+
+    socket.on("usuarioEntrouVoz", async ({ socketId, nome }) => {
+      if (!socketId) return;
+
+      adicionarMembroVoz(nome, socketId);
+
+      if (typeof canalVozAtual !== "undefined" && canalVozAtual) {
+        await criarPeer(socketId, false);
+      }
+
+      atualizarBotoesVoz();
+    });
+
+    socket.on("usuarioSaiuVoz", ({ socketId }) => {
+      if (!socketId) return;
+
+      removerMembroVoz(socketId);
+      removerAudio(socketId);
+      atualizarBotoesVoz();
+    });
+
+    socket.on("offer", async ({ offer, de }) => {
+      if (!localStream) return;
+
+      const peer = await criarPeer(de, false);
+      await peer.setRemoteDescription(new RTCSessionDescription(offer));
+
+      const answer = await peer.createAnswer();
+      await peer.setLocalDescription(answer);
+
+      socket.emit("answer", {
+        answer,
+        para: de,
+      });
+    });
+
+    socket.on("answer", async ({ answer, de }) => {
+      const peer = peers[de];
+
+      if (peer) {
+        await peer.setRemoteDescription(new RTCSessionDescription(answer));
+      }
+    });
+
+    socket.on("iceCandidate", async ({ candidate, de }) => {
+      const peer = peers[de];
+
+      if (peer && candidate) {
+        await peer.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    });
+
+    socket.on("atualizarVoz", async ({ canalId }) => {
+      if (canalId) {
+        await carregarMembrosVoz(canalId);
+      }
+    });
+
+    socket.on("chamadaRecebida", ({ de, nome }) => {
+      chamadaDeSocketId = de;
+      document.getElementById("chamada-nome").innerText = `${nome} está te chamando...`;
+      document.getElementById("modal-chamada").style.display = "block";
+      document.getElementById("modal-chamada-overlay").style.display = "block";
+    });
+
+    socket.on("chamadaAceita", async ({ de }) => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localStream = stream;
+        await criarPeer(de, true);
+      } catch (err) {
+        alert("Não foi possível acessar o microfone.");
+        console.error(err);
+      }
+    });
+
+    socket.on("chamadaRecusada", () => {
+      alert("Chamada recusada.");
+      chamadaParaSocketId = null;
+    });
+
+    socket.on("chamadaEncerrada", () => {
+      alert("Chamada encerrada.");
+      encerrarConexoesVoz();
+    });
+  } catch (err) {
+    console.error("Erro ao iniciar chat:", err);
+    localStorage.removeItem("usuario");
+    window.location.href = "/pages/login.html";
+  }
 }
 
 async function carregarCanais() {
-  const res = await fetch("/chat/canais", { credentials: "include" });
-  const canais = await res.json();
+  try {
+    const res = await fetch("/chat/canais", { credentials: "include" });
 
-  const lista = document.getElementById("lista-canais");
-  lista.innerHTML = "";
+    if (!res.ok) {
+      throw new Error("Erro ao carregar canais");
+    }
 
-  canais.forEach((canal) => {
-    const div = document.createElement("div");
-    div.classList.add("canal-item");
-    div.setAttribute("data-canal-id", canal.id);
-    div.innerHTML = `
-      <span onclick="entrarCanalTexto(${canal.id}, '${canal.nome}', this.parentElement)">
-        # ${canal.nome} <span class="badge" id="badge-${canal.id}" style="display:none">●</span>
-      </span>
-      <button class="btn-entrar-voz" data-canal-id="${canal.id}" onclick="entrarVoz(${canal.id}, '${canal.nome}')">🎙️ Entrar</button>
-    `;
-    lista.appendChild(div);
-  });
+    const canais = await res.json();
+
+    const lista = document.getElementById("lista-canais");
+    lista.innerHTML = "";
+
+    canais.forEach((canal) => {
+      const div = document.createElement("div");
+      div.classList.add("canal-item");
+      div.setAttribute("data-canal-id", canal.id);
+
+      const span = document.createElement("span");
+      span.classList.add("canal-nome");
+
+      const textoCanal = document.createTextNode(`# ${canal.nome} `);
+      span.appendChild(textoCanal);
+
+      const badge = document.createElement("span");
+      badge.classList.add("badge");
+      badge.id = `badge-${canal.id}`;
+      badge.style.display = "none";
+      badge.innerText = "●";
+
+      span.appendChild(badge);
+
+      span.onclick = () => entrarCanalTexto(canal.id, canal.nome, div);
+
+      const btnVoz = document.createElement("button");
+      btnVoz.classList.add("btn-entrar-voz");
+      btnVoz.setAttribute("data-canal-id", canal.id);
+      btnVoz.innerText = "🎙️ Entrar";
+      btnVoz.onclick = () => entrarVoz(canal.id, canal.nome);
+
+      div.appendChild(span);
+      div.appendChild(btnVoz);
+
+      lista.appendChild(div);
+    });
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao carregar canais.");
+  }
 }
 
 async function carregarUsuarios() {
-  const res = await fetch("/chat/usuarios", { credentials: "include" });
-  usuarios = await res.json();
+  try {
+    const res = await fetch("/chat/usuarios", { credentials: "include" });
+
+    if (!res.ok) {
+      throw new Error("Erro ao carregar usuários");
+    }
+
+    usuarios = await res.json();
+  } catch (err) {
+    console.error(err);
+    usuarios = [];
+  }
 }
 
 function adicionarNotificacao(canalId, foiMencionado = false) {
   notificacoes[canalId] = (notificacoes[canalId] || 0) + 1;
-  if (foiMencionado) mencoes[canalId] = true;
+
+  if (foiMencionado) {
+    mencoes[canalId] = true;
+  }
 
   const badge = document.getElementById(`badge-${canalId}`);
   if (!badge) return;
@@ -167,6 +283,7 @@ function limparNotificacao(canalId) {
   mencoes[canalId] = false;
 
   const badge = document.getElementById(`badge-${canalId}`);
+
   if (badge) {
     badge.style.display = "none";
     badge.classList.remove("mencao");
@@ -176,7 +293,10 @@ function limparNotificacao(canalId) {
 function entrarCanalTexto(canalId, nomeCanal, el) {
   canalAtual = canalId;
 
-  document.querySelectorAll(".canal-item").forEach((item) => item.classList.remove("ativo"));
+  document.querySelectorAll(".canal-item").forEach((item) => {
+    item.classList.remove("ativo");
+  });
+
   el.closest(".canal-item").classList.add("ativo");
 
   document.getElementById("canal-ativo").innerText = `# ${nomeCanal}`;
@@ -185,41 +305,113 @@ function entrarCanalTexto(canalId, nomeCanal, el) {
 
   limparNotificacao(canalId);
 
-  socket.emit("entrarCanal", canalId);
+  if (socket) {
+    socket.emit("entrarCanal", canalId);
+  }
+
   carregarMensagens(canalId);
 }
 
 async function carregarMensagens(canalId) {
-  const res = await fetch(`/chat/mensagens/${canalId}`, { credentials: "include" });
-  const mensagens = await res.json();
-  mensagens.forEach((m) => adicionarMensagem(m.id, m.nome, m.texto, m.usuario_id === usuario.id, m.enviado_em));
+  try {
+    const res = await fetch(`/chat/mensagens/${canalId}`, {
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      throw new Error("Erro ao carregar mensagens");
+    }
+
+    const mensagens = await res.json();
+
+    mensagens.forEach((m) => {
+      adicionarMensagem(
+        m.id,
+        m.nome,
+        m.texto,
+        Number(m.usuario_id) === Number(usuario.id),
+        m.enviado_em
+      );
+    });
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao carregar mensagens.");
+  }
 }
 
-function formatarTexto(texto) {
-  return texto.replace(/@(\w+)/g, '<span class="mencao">@$1</span>');
+function verificarMencao(texto, nomeUsuario) {
+  if (!texto || !nomeUsuario) return false;
+
+  return texto.toLowerCase().includes(`@${nomeUsuario.toLowerCase()}`);
+}
+
+function criarTextoComMencoes(texto) {
+  const fragment = document.createDocumentFragment();
+  const partes = texto.split(/(@[\wÀ-ÿ]+)/g);
+
+  partes.forEach((parte) => {
+    if (parte.startsWith("@")) {
+      const span = document.createElement("span");
+      span.classList.add("mencao");
+      span.innerText = parte;
+      fragment.appendChild(span);
+    } else {
+      fragment.appendChild(document.createTextNode(parte));
+    }
+  });
+
+  return fragment;
 }
 
 function adicionarMensagem(id, nome, texto, propria = false, enviado_em = null) {
   const div = document.createElement("div");
   div.classList.add("mensagem");
   div.setAttribute("data-id", id);
-  if (propria) div.classList.add("propria");
+
+  if (propria) {
+    div.classList.add("propria");
+  }
 
   const hora = enviado_em
-    ? new Date(enviado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-    : new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    ? new Date(enviado_em).toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : new Date().toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 
-  const btnApagar = propria
-    ? `<button class="btn-apagar" onclick="apagarMensagem(${id})">✕</button>`
-    : "";
+  const autor = document.createElement("span");
+  autor.classList.add("autor");
+  autor.innerText = nome;
 
-  div.innerHTML = `
-    <span class="autor">${nome} <span class="hora">${hora}</span></span>
-    <div class="balao-wrapper">
-      <div class="balao">${formatarTexto(texto)}</div>
-      ${btnApagar}
-    </div>
-  `;
+  const horaSpan = document.createElement("span");
+  horaSpan.classList.add("hora");
+  horaSpan.innerText = ` ${hora}`;
+
+  autor.appendChild(horaSpan);
+
+  const balaoWrapper = document.createElement("div");
+  balaoWrapper.classList.add("balao-wrapper");
+
+  const balao = document.createElement("div");
+  balao.classList.add("balao");
+  balao.appendChild(criarTextoComMencoes(texto));
+
+  balaoWrapper.appendChild(balao);
+
+  if (propria) {
+    const btnApagar = document.createElement("button");
+    btnApagar.classList.add("btn-apagar");
+    btnApagar.innerText = "✕";
+    btnApagar.onclick = () => apagarMensagem(id);
+
+    balaoWrapper.appendChild(btnApagar);
+  }
+
+  div.appendChild(autor);
+  div.appendChild(balaoWrapper);
 
   const container = document.getElementById("chat-mensagens");
   container.appendChild(div);
@@ -229,17 +421,25 @@ function adicionarMensagem(id, nome, texto, propria = false, enviado_em = null) 
 async function apagarMensagem(id) {
   if (!confirm("Apagar essa mensagem?")) return;
 
-  const res = await fetch(`/chat/mensagens/${id}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
+  try {
+    const res = await fetch(`/chat/mensagens/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (res.ok) {
-    socket.emit("mensagemApagada", { id, canalId: canalAtual });
-  } else {
-    alert(data.erro || "Erro ao apagar mensagem");
+    if (res.ok) {
+      socket.emit("mensagemApagada", {
+        id,
+        canalId: canalAtual,
+      });
+    } else {
+      alert(data.erro || "Erro ao apagar mensagem");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao apagar mensagem.");
   }
 }
 
@@ -248,13 +448,24 @@ function enviar() {
   const texto = input.value.trim();
 
   if (!texto) return;
+
   if (!canalAtual) {
     alert("Selecione um canal antes de enviar!");
     return;
   }
 
-  socket.emit("mensagem", { texto, canalId: canalAtual });
+  if (!socket || !socket.connected) {
+    alert("Você está desconectado. Recarregue a página.");
+    return;
+  }
+
+  socket.emit("mensagem", {
+    texto,
+    canalId: canalAtual,
+  });
+
   socket.emit("parouDigitar", canalAtual);
+
   input.value = "";
   fecharSugestoes();
 }
@@ -263,9 +474,12 @@ function mostrarSugestoes(filtro) {
   const lista = document.getElementById("sugestoes-mencao");
   lista.innerHTML = "";
 
-  const filtrados = usuarios.filter((u) =>
-    u.nome.toLowerCase().includes(filtro.toLowerCase()) && u.nome !== usuario.nome
-  );
+  const filtrados = usuarios.filter((u) => {
+    return (
+      u.nome.toLowerCase().includes(filtro.toLowerCase()) &&
+      u.nome !== usuario.nome
+    );
+  });
 
   if (filtrados.length === 0) {
     lista.style.display = "none";
@@ -284,26 +498,36 @@ function mostrarSugestoes(filtro) {
 }
 
 function fecharSugestoes() {
-  document.getElementById("sugestoes-mencao").style.display = "none";
+  const lista = document.getElementById("sugestoes-mencao");
+
+  if (lista) {
+    lista.style.display = "none";
+  }
 }
 
 function inserirMencao(nome) {
   const input = document.getElementById("msg-input");
   const valor = input.value;
   const ultimoArroba = valor.lastIndexOf("@");
+
   input.value = valor.substring(0, ultimoArroba) + `@${nome} `;
   input.focus();
+
   fecharSugestoes();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   const input = document.getElementById("msg-input");
 
+  if (!input) return;
+
   input.addEventListener("input", () => {
-    if (!canalAtual) return;
+    if (!canalAtual || !socket) return;
 
     socket.emit("digitando", canalAtual);
+
     clearTimeout(timeoutDigitando);
+
     timeoutDigitando = setTimeout(() => {
       socket.emit("parouDigitar", canalAtual);
     }, 2000);
@@ -313,6 +537,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (ultimoArroba !== -1) {
       const filtro = valor.substring(ultimoArroba + 1);
+
       if (!filtro.includes(" ")) {
         mostrarSugestoes(filtro);
         return;
@@ -323,7 +548,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") fecharSugestoes();
+    if (e.key === "Escape") {
+      fecharSugestoes();
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       enviar();
       e.preventDefault();
@@ -354,25 +582,52 @@ async function criarCanal() {
     return;
   }
 
-  const res = await fetch("/chat/canais", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ nome, descricao }),
-  });
+  try {
+    const res = await fetch("/chat/canais", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        nome,
+        descricao,
+      }),
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (res.ok) {
-    fecharModalCanal();
-    carregarCanais();
-  } else {
-    document.getElementById("canal-erro").innerText = data.erro || "Erro ao criar canal";
+    if (res.ok) {
+      fecharModalCanal();
+      carregarCanais();
+    } else {
+      document.getElementById("canal-erro").innerText =
+        data.erro || "Erro ao criar canal";
+    }
+  } catch (err) {
+    console.error(err);
+    document.getElementById("canal-erro").innerText = "Erro ao criar canal";
+  }
+}
+
+function encerrarConexoesVoz() {
+  if (typeof localStream !== "undefined" && localStream) {
+    localStream.getTracks().forEach((t) => t.stop());
+    localStream = null;
+  }
+
+  if (typeof peers !== "undefined" && peers) {
+    Object.values(peers).forEach((p) => p.close());
+    peers = {};
   }
 }
 
 async function logout() {
-  await fetch("/auth/logout", { method: "POST", credentials: "include" });
+  await fetch("/auth/logout", {
+    method: "POST",
+    credentials: "include",
+  });
+
   localStorage.removeItem("usuario");
   window.location.href = "/pages/login.html";
 }
