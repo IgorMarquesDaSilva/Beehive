@@ -7,9 +7,7 @@ let chamadaParaSocketId = null;
 
 const iceServers = {
   iceServers: [
-    {
-      urls: "stun:stun.relay.metered.ca:80",
-    },
+    { urls: "stun:stun.relay.metered.ca:80" },
     {
       urls: "turn:global.relay.metered.ca:80",
       username: "cbd6f9ec1800a701202dfcc3",
@@ -32,75 +30,159 @@ const iceServers = {
     },
   ],
 };
+
 async function entrarVoz(canalId, nomeCanal) {
-  if (canalVozAtual) await sairVoz();
+  if (!socket || !socket.connected) {
+    alert("Você precisa estar conectado para entrar na voz.");
+    return;
+  }
+
+  if (canalVozAtual && Number(canalVozAtual) === Number(canalId)) {
+    await sairVoz();
+    return;
+  }
+
+  if (canalVozAtual) {
+    await sairVoz();
+  }
 
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: false,
+    });
   } catch (err) {
-    alert("Não foi possível acessar o microfone.");
+    console.error("Erro ao acessar microfone:", err);
+    alert("Não foi possível acessar o microfone. Verifique a permissão do navegador.");
     return;
   }
 
   canalVozAtual = canalId;
   mutado = false;
 
-  document.getElementById("voz-painel").style.display = "flex";
-  document.getElementById("voz-titulo").innerText = `🎙️ # ${nomeCanal}`;
-  document.getElementById("btn-mute").innerText = "🎙️ Mudo";
+  const painel = document.getElementById("voz-painel");
+  const titulo = document.getElementById("voz-titulo");
+  const btnMute = document.getElementById("btn-mute");
+  const membros = document.getElementById("voz-membros");
+
+  if (painel) painel.style.display = "flex";
+  if (titulo) titulo.innerText = `🎙️ # ${nomeCanal}`;
+  if (btnMute) btnMute.innerText = "🎙️ Ativo";
+  if (membros) membros.innerHTML = "";
+
+  adicionarMembroVoz(usuario.nome, socket.id, true);
 
   socket.emit("entrarVoz", canalId);
+
   atualizarBotoesVoz();
 }
 
 async function sairVoz() {
   if (!canalVozAtual) return;
 
-  socket.emit("sairVoz", canalVozAtual);
+  if (socket && socket.connected) {
+    socket.emit("sairVoz", canalVozAtual);
+  }
 
-  Object.values(peers).forEach((peer) => peer.close());
+  Object.values(peers).forEach((peer) => {
+    if (peer) peer.close();
+  });
+
   peers = {};
 
   if (localStream) {
-    localStream.getTracks().forEach((t) => t.stop());
+    localStream.getTracks().forEach((track) => track.stop());
     localStream = null;
   }
 
+  document.querySelectorAll("audio[data-voz='true']").forEach((audio) => {
+    audio.remove();
+  });
+
   canalVozAtual = null;
-  document.getElementById("voz-painel").style.display = "none";
-  document.getElementById("voz-membros").innerHTML = "";
+  mutado = false;
+
+  const painel = document.getElementById("voz-painel");
+  const membros = document.getElementById("voz-membros");
+
+  if (painel) painel.style.display = "none";
+  if (membros) membros.innerHTML = "";
+
   atualizarBotoesVoz();
 }
 
 function toggleMute() {
   if (!localStream) return;
+
   mutado = !mutado;
-  localStream.getAudioTracks().forEach((t) => (t.enabled = !mutado));
-  document.getElementById("btn-mute").innerText = mutado ? "🔇 Mudo" : "🎙️ Ativo";
+
+  localStream.getAudioTracks().forEach((track) => {
+    track.enabled = !mutado;
+  });
+
+  const btnMute = document.getElementById("btn-mute");
+
+  if (btnMute) {
+    btnMute.innerText = mutado ? "🔇 Mudo" : "🎙️ Ativo";
+  }
 }
 
 async function criarPeer(socketId, iniciador) {
+  if (!socketId || socketId === socket.id) return null;
+
+  if (peers[socketId]) {
+    return peers[socketId];
+  }
+
   const peer = new RTCPeerConnection(iceServers);
   peers[socketId] = peer;
 
   if (localStream) {
-    localStream.getTracks().forEach((track) => peer.addTrack(track, localStream));
+    localStream.getTracks().forEach((track) => {
+      peer.addTrack(track, localStream);
+    });
   }
 
-  peer.onicecandidate = (e) => {
-    if (e.candidate) {
-      socket.emit("iceCandidate", { candidate: e.candidate, para: socketId });
+  peer.onicecandidate = (event) => {
+    if (event.candidate && socket && socket.connected) {
+      socket.emit("iceCandidate", {
+        candidate: event.candidate,
+        para: socketId,
+      });
     }
   };
 
-  peer.ontrack = (e) => {
-    adicionarAudio(socketId, e.streams[0]);
+  peer.ontrack = (event) => {
+    const stream = event.streams && event.streams[0];
+
+    if (stream) {
+      adicionarAudio(socketId, stream);
+    }
+  };
+
+  peer.onconnectionstatechange = () => {
+    if (
+      peer.connectionState === "failed" ||
+      peer.connectionState === "disconnected" ||
+      peer.connectionState === "closed"
+    ) {
+      removerAudio(socketId);
+      removerMembroVoz(socketId);
+    }
   };
 
   if (iniciador) {
-    const offer = await peer.createOffer();
-    await peer.setLocalDescription(offer);
-    socket.emit("offer", { offer, para: socketId });
+    try {
+      const offer = await peer.createOffer();
+      await peer.setLocalDescription(offer);
+
+      socket.emit("offer", {
+        offer,
+        para: socketId,
+      });
+    } catch (err) {
+      console.error("Erro ao criar offer:", err);
+    }
   }
 
   return peer;
@@ -108,46 +190,75 @@ async function criarPeer(socketId, iniciador) {
 
 function adicionarAudio(socketId, stream) {
   let audio = document.getElementById(`audio-${socketId}`);
+
   if (!audio) {
     audio = document.createElement("audio");
     audio.id = `audio-${socketId}`;
     audio.autoplay = true;
+    audio.playsInline = true;
+    audio.setAttribute("data-voz", "true");
     document.body.appendChild(audio);
   }
+
   audio.srcObject = stream;
+
+  audio.play().catch((err) => {
+    console.warn("O navegador bloqueou o autoplay do áudio:", err);
+  });
 }
 
 function removerAudio(socketId) {
   const audio = document.getElementById(`audio-${socketId}`);
-  if (audio) audio.remove();
+
+  if (audio) {
+    audio.srcObject = null;
+    audio.remove();
+  }
+
   if (peers[socketId]) {
     peers[socketId].close();
     delete peers[socketId];
   }
 }
 
-function adicionarMembroVoz(nome, socketId) {
+function adicionarMembroVoz(nome, socketId, souEu = false) {
+  if (!socketId) return;
+
+  const lista = document.getElementById("voz-membros");
+  if (!lista) return;
+
   const existing = document.getElementById(`membro-${socketId}`);
   if (existing) return;
 
   const div = document.createElement("div");
   div.classList.add("voz-membro");
   div.id = `membro-${socketId}`;
-  div.innerHTML = `
-    <span class="voz-avatar">${nome[0].toUpperCase()}</span>
-    <span>${nome}</span>
-  `;
-  document.getElementById("voz-membros").appendChild(div);
+
+  const avatar = document.createElement("span");
+  avatar.classList.add("voz-avatar");
+  avatar.innerText = nome ? nome.charAt(0).toUpperCase() : "?";
+
+  const nomeSpan = document.createElement("span");
+  nomeSpan.innerText = souEu ? `${nome} (você)` : nome;
+
+  div.appendChild(avatar);
+  div.appendChild(nomeSpan);
+
+  lista.appendChild(div);
 }
 
 function removerMembroVoz(socketId) {
   const el = document.getElementById(`membro-${socketId}`);
-  if (el) el.remove();
+
+  if (el) {
+    el.remove();
+  }
 }
 
 function atualizarBotoesVoz() {
   document.querySelectorAll(".btn-entrar-voz").forEach((btn) => {
     const canalId = btn.getAttribute("data-canal-id");
+
     if (Number(canalId) === Number(canalVozAtual)) {
       btn.innerText = "✅ Conectado";
       btn.style.color = "#2ecc71";
@@ -159,35 +270,83 @@ function atualizarBotoesVoz() {
 }
 
 async function carregarMembrosVoz(canalId) {
-  const res = await fetch(`/chat/voz/${canalId}`, { credentials: "include" });
-  const membros = await res.json();
+  if (!canalId) return;
 
-  const lista = document.getElementById("lista-voz");
-  lista.innerHTML = "";
+  try {
+    const res = await fetch(`/chat/voz/${canalId}`, {
+      credentials: "include",
+    });
 
-  membros.forEach((m) => {
-    const div = document.createElement("div");
-    div.classList.add("canal-item", "voz-item");
-    div.innerHTML = `<span>🔊 ${m.nome}</span>`;
-    lista.appendChild(div);
-  });
+    if (!res.ok) return;
+
+    const membros = await res.json();
+
+    const lista = document.getElementById("lista-voz");
+    if (!lista) return;
+
+    lista.innerHTML = "";
+
+    membros.forEach((m) => {
+      const div = document.createElement("div");
+      div.classList.add("canal-item", "voz-item");
+
+      const span = document.createElement("span");
+      span.innerText = `🔊 ${m.nome}`;
+
+      div.appendChild(span);
+      lista.appendChild(div);
+    });
+  } catch (err) {
+    console.error("Erro ao carregar membros da voz:", err);
+  }
 }
 
 function aceitarChamada() {
-  document.getElementById("modal-chamada").style.display = "none";
-  document.getElementById("modal-chamada-overlay").style.display = "none";
+  const modal = document.getElementById("modal-chamada");
+  const overlay = document.getElementById("modal-chamada-overlay");
 
-  socket.emit("aceitarChamada", { paraSocketId: chamadaDeSocketId });
+  if (modal) modal.style.display = "none";
+  if (overlay) overlay.style.display = "none";
 
-  navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-    localStream = stream;
-    criarPeer(chamadaDeSocketId, false);
+  if (!chamadaDeSocketId) return;
+
+  socket.emit("aceitarChamada", {
+    paraSocketId: chamadaDeSocketId,
   });
+
+  navigator.mediaDevices
+    .getUserMedia({
+      audio: true,
+      video: false,
+    })
+    .then((stream) => {
+      localStream = stream;
+      criarPeer(chamadaDeSocketId, false);
+    })
+    .catch((err) => {
+      console.error("Erro ao aceitar chamada:", err);
+      alert("Não foi possível acessar o microfone.");
+    });
 }
 
 function recusarChamada() {
-  document.getElementById("modal-chamada").style.display = "none";
-  document.getElementById("modal-chamada-overlay").style.display = "none";
-  socket.emit("recusarChamada", { paraSocketId: chamadaDeSocketId });
+  const modal = document.getElementById("modal-chamada");
+  const overlay = document.getElementById("modal-chamada-overlay");
+
+  if (modal) modal.style.display = "none";
+  if (overlay) overlay.style.display = "none";
+
+  if (chamadaDeSocketId) {
+    socket.emit("recusarChamada", {
+      paraSocketId: chamadaDeSocketId,
+    });
+  }
+
   chamadaDeSocketId = null;
 }
+
+window.addEventListener("beforeunload", () => {
+  if (canalVozAtual && socket && socket.connected) {
+    socket.emit("sairVoz", canalVozAtual);
+  }
+});
