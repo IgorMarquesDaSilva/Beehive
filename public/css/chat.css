@@ -271,10 +271,11 @@ body {
 }
 
 .mensagem {
-  max-width: 78%;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
+  max-width: 72%;
+  animation: aparecerMensagem 0.18s ease;
 }
 
 .mensagem.propria {
@@ -301,18 +302,25 @@ body {
 }
 
 .balao {
-  background: #f1f3f8;
+  background: #f5f6fb;
   color: #2b2d35;
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: 16px;
+  padding: 12px 14px;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
   overflow-wrap: anywhere;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.03),
+    0 8px 24px rgba(15,23,42,0.03);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .mensagem.propria .balao {
-  background: #ebeaff;
-  color: #24245f;
+  background:
+    linear-gradient(135deg, #6768ff, #5b5ce2);
+  color: #fff;
 }
 
 .mencao {
@@ -740,10 +748,17 @@ body {
 }
 
 .chat-mensagens {
-  min-height: 0;
   flex: 1;
+  padding: 26px;
   overflow-y: auto;
-  padding-bottom: 24px;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(91,92,226,0.03), transparent 280px),
+    #ffffff;
+  scroll-behavior: smooth;
 }
 
 .digitando-container,
@@ -754,4 +769,39 @@ body {
 .chat-input-area {
   position: relative;
   z-index: 10;
+}
+.mensagem:hover .balao {
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 10px rgba(0,0,0,0.05),
+    0 14px 30px rgba(91,92,226,0.08);
+}
+
+.chat-mensagens::-webkit-scrollbar {
+  width: 10px;
+}
+
+.chat-mensagens::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-mensagens::-webkit-scrollbar-thumb {
+  background: rgba(91,92,226,0.18);
+  border-radius: 20px;
+}
+
+.chat-mensagens::-webkit-scrollbar-thumb:hover {
+  background: rgba(91,92,226,0.35);
+}
+
+@keyframes aparecerMensagem {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
