@@ -1,99 +1,168 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Beehive 🐝 - Chat</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beehive - Chat</title>
+
+  <link rel="stylesheet" href="/css/chat.css" />
 </head>
 <body>
 
-  <div class="chat-container">
+  <div class="app-shell">
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-      <div class="sidebar-header">
-        <h2>🐝 Beehive</h2>
-        <p id="nome-usuario">Carregando...</p>
-        <a href="/pages/perfil.html" class="btn-perfil">Ver meu perfil</a>
+    <aside class="sidebar">
+      <div class="workspace">
+        <div>
+          <h1>Workspace Engenharia</h1>
+          <p>Comunicação interna</p>
+        </div>
       </div>
 
-      <div class="canais-titulo">
-        Canais
-        <span class="btn-novo-canal" onclick="abrirModalCanal()">+</span>
-      </div>
-      <div id="lista-canais"></div>
+      <div class="sidebar-section">
+        <div class="section-title">
+          <span>Canais</span>
+          <button onclick="abrirModalCanal()" title="Novo canal">+</button>
+        </div>
 
-      <div class="canais-titulo" style="margin-top: 8px;">
-        Voz
+        <div id="lista-canais" class="channel-list"></div>
       </div>
-      <div id="lista-voz"></div>
+
+      <div class="sidebar-section online-section">
+        <div class="section-title">
+          <span>Membros online</span>
+        </div>
+
+        <div class="online-user">
+          <div class="avatar azul">CA</div>
+          <div>
+            <strong id="nome-usuario">Carregando...</strong>
+            <small>Você</small>
+          </div>
+          <span class="online-dot"></span>
+        </div>
+
+        <div id="lista-voz" class="voice-list"></div>
+      </div>
 
       <div class="sidebar-footer">
+        <a href="/pages/perfil.html">Meu perfil</a>
         <button onclick="logout()">Sair</button>
       </div>
-    </div>
+    </aside>
 
-    <!-- ÁREA PRINCIPAL -->
-    <div class="chat-main">
-      <div class="chat-header" id="canal-ativo">
-        Selecione um canal
-      </div>
+    <main class="chat-main">
+      <header class="chat-header">
+        <div>
+          <h2 id="canal-ativo">Selecione um canal</h2>
+          <p>Mensagens, arquivos e comunicação da equipe</p>
+        </div>
 
-      <div class="chat-mensagens" id="chat-mensagens"></div>
+        <div class="header-actions">
+          <button title="Notificações">🔔</button>
+          <button title="Fixados">📌</button>
+          <button title="Configurações">⚙️</button>
+        </div>
+      </header>
+
+      <section class="chat-mensagens" id="chat-mensagens"></section>
 
       <div class="digitando-container">
         <span id="digitando-texto"></span>
       </div>
 
-      <div class="chat-input">
-        <div class="input-wrapper">
-          <div id="sugestoes-mencao" class="sugestoes-mencao"></div>
-          <input
-            type="text"
-            id="msg-input"
-            placeholder="Digite sua mensagem... (use @ para mencionar)"
-          />
+      <footer class="chat-input-area">
+        <div class="format-toolbar">
+          <button type="button">B</button>
+          <button type="button"><i>I</i></button>
+          <button type="button">U</button>
+          <button type="button">🔗</button>
+          <button type="button">📎</button>
         </div>
-        <button onclick="enviar()">Enviar</button>
+
+        <div class="message-box">
+          <div class="input-wrapper">
+            <div id="sugestoes-mencao" class="sugestoes-mencao"></div>
+            <input
+              type="text"
+              id="msg-input"
+              placeholder="Mensagem para o canal... use @ para mencionar"
+            />
+          </div>
+
+          <button class="send-btn" onclick="enviar()">Enviar</button>
+        </div>
+      </footer>
+    </main>
+
+    <aside class="right-panel">
+      <div class="search-box">
+        <label>🔍 Busca semântica</label>
+        <input type="text" placeholder="Pesquisar conteúdo..." />
       </div>
-    </div>
+
+      <div class="results">
+        <span class="results-title">Resultados</span>
+
+        <div class="result-card">
+          <strong>Autenticação JWT</strong>
+          <p>Módulo finalizado com suporte a refresh token...</p>
+          <small>#projeto-alpha · hoje</small>
+        </div>
+
+        <div class="result-card">
+          <strong>Deploy staging</strong>
+          <p>Ambiente pronto para testes de QA e integração...</p>
+          <small>#projeto-alpha · hoje</small>
+        </div>
+
+        <div class="result-card">
+          <strong>Bug endpoint /users</strong>
+          <p>Erro 500 quando o campo email está vazio...</p>
+          <small>#backend-api · hoje</small>
+        </div>
+      </div>
+    </aside>
 
   </div>
 
-  <!-- MODAL CRIAR CANAL -->
   <div class="modal-overlay" id="modal-overlay" onclick="fecharModalCanal()"></div>
+
   <div class="modal" id="modal-canal">
-    <h3>Novo Canal</h3>
-    <input type="text" id="canal-nome" placeholder="Nome do canal (ex: financeiro)" />
-    <input type="text" id="canal-descricao" placeholder="Descrição (opcional)" />
+    <h3>Novo canal</h3>
+    <input type="text" id="canal-nome" placeholder="Nome do canal" />
+    <input type="text" id="canal-descricao" placeholder="Descrição opcional" />
+
     <div class="modal-botoes">
       <button class="btn-cancelar" onclick="fecharModalCanal()">Cancelar</button>
       <button class="btn-criar" onclick="criarCanal()">Criar</button>
     </div>
+
     <p class="erro" id="canal-erro"></p>
   </div>
 
-  <!-- MODAL CHAMADA RECEBIDA -->
   <div class="modal-overlay" id="modal-chamada-overlay"></div>
+
   <div class="modal" id="modal-chamada" style="display:none">
     <h3>📞 Chamada recebida</h3>
-    <p id="chamada-nome" style="color:#e0e0e0; margin-bottom: 20px;"></p>
+    <p id="chamada-nome"></p>
+
     <div class="modal-botoes">
       <button class="btn-cancelar" onclick="recusarChamada()">Recusar</button>
-      <button class="btn-criar" onclick="aceitarChamada()" style="background-color:#2ecc71;">Aceitar</button>
+      <button class="btn-criar" onclick="aceitarChamada()">Aceitar</button>
     </div>
   </div>
 
-  <!-- PAINEL DE VOZ -->
   <div class="voz-painel" id="voz-painel" style="display:none">
     <div class="voz-header">
       <span id="voz-titulo">🎙️ Canal de voz</span>
       <button class="btn-sair-voz" onclick="sairVoz()">Sair</button>
     </div>
+
     <div class="voz-membros" id="voz-membros"></div>
+
     <div class="voz-controles">
-      <button class="btn-mute" id="btn-mute" onclick="toggleMute()">🎙️ Mudo</button>
+      <button class="btn-mute" id="btn-mute" onclick="toggleMute()">🎙️ Ativo</button>
     </div>
   </div>
 
