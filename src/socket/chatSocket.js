@@ -77,34 +77,66 @@ function initSocket(io) {
       });
     });
 
-    socket.on("mensagem", async ({ texto, canalId }) => {
-      if (!canalId) return;
-      if (!texto || typeof texto !== "string") return;
+    socket.on(
+      "mensagem",
+      async ({
+        texto,
+        canalId,
+        arquivo_url = null,
+        arquivo_nome = null,
+        arquivo_tipo = null,
+      }) => {
+        if (!canalId) return;
 
-      const textoLimpo = texto.trim();
+        const textoLimpo =
+          typeof texto === "string" ? texto.trim() : "";
 
-      if (textoLimpo === "") return;
-      if (textoLimpo.length > 2000) return;
+        const temTexto = textoLimpo.length > 0;
+        const temArquivo = !!arquivo_url;
 
-      try {
-        const [result] = await db.query(
-          "INSERT INTO mensagens (usuario_id, canal_id, texto) VALUES (?, ?, ?)",
-          [usuario.id, canalId, textoLimpo]
-        );
+        if (!temTexto && !temArquivo) return;
 
-        io.to(`canal_${canalId}`).emit("mensagem", {
-          id: result.insertId,
-          nome: usuario.nome,
-          usuarioId: usuario.id,
-          texto: textoLimpo,
-          enviado_em: new Date(),
-          canalId: Number(canalId),
-        });
-      } catch (err) {
-        console.error("Erro ao salvar mensagem:", err);
+        try {
+          const [result] = await db.query(
+            `
+            INSERT INTO mensagens
+            (
+              usuario_id,
+              canal_id,
+              texto,
+              arquivo_url,
+              arquivo_nome,
+              arquivo_tipo
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            `,
+            [
+              usuario.id,
+              canalId,
+              textoLimpo,
+              arquivo_url,
+              arquivo_nome,
+              arquivo_tipo,
+            ]
+          );
+
+          io.to(`canal_${canalId}`).emit("mensagem", {
+            id: result.insertId,
+            nome: usuario.nome,
+            usuarioId: usuario.id,
+            texto: textoLimpo,
+            enviado_em: new Date(),
+            canalId: Number(canalId),
+
+            arquivo_url,
+            arquivo_nome,
+            arquivo_tipo,
+          });
+        } catch (err) {
+          console.error("Erro ao salvar mensagem:", err);
+        }
       }
-    });
-
+    );
     socket.on("mensagemApagada", ({ id, canalId }) => {
       if (!id || !canalId) return;
 

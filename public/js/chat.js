@@ -12,6 +12,7 @@ let timeoutDigitando = null;
 let usuarios = [];
 let notificacoes = {};
 let mencoes = {};
+let arquivoSelecionado = null;
 
 async function iniciar() {
   try {
@@ -67,7 +68,10 @@ async function iniciar() {
           data.nome,
           data.texto,
           Number(data.usuarioId) === Number(usuario.id) || data.nome === usuario.nome,
-          data.enviado_em
+          data.enviado_em,
+          data.arquivo_url,
+          data.arquivo_nome,
+          data.arquivo_tipo
         );
       } else {
         const foiMencionado = verificarMencao(data.texto, usuario.nome);
@@ -386,7 +390,10 @@ async function carregarMensagens(canalId) {
         m.nome,
         m.texto,
         Number(m.usuario_id) === Number(usuario.id),
-        m.enviado_em
+        m.enviado_em,
+        m.arquivo_url,
+        m.arquivo_nome,
+        m.arquivo_tipo
       );
     });
   } catch (err) {
@@ -419,7 +426,16 @@ function criarTextoComMencoes(texto) {
   return fragment;
 }
 
-function adicionarMensagem(id, nome, texto, propria = false, enviado_em = null) {
+function adicionarMensagem(
+  id,
+  nome,
+  texto,
+  propria = false,
+  enviado_em = null,
+  arquivo_url = null,
+  arquivo_nome = null,
+  arquivo_tipo = null
+) {
   const div = document.createElement("div");
   div.classList.add("mensagem");
   div.setAttribute("data-id", id);
@@ -461,7 +477,14 @@ function adicionarMensagem(id, nome, texto, propria = false, enviado_em = null) 
 
   const balao = document.createElement("div");
   balao.classList.add("balao");
-  balao.appendChild(criarTextoComMencoes(texto));
+
+  if (texto && texto.trim() !== "") {
+    balao.appendChild(criarTextoComMencoes(texto));
+  }
+
+  if (arquivo_url) {
+    balao.appendChild(criarAnexoMensagem(arquivo_url, arquivo_nome, arquivo_tipo));
+  }
 
   balaoWrapper.appendChild(balao);
 
@@ -514,7 +537,10 @@ function enviar() {
   const input = document.getElementById("msg-input");
   const texto = input.value.trim();
 
-  if (!texto) return;
+  const temTexto = texto.length > 0;
+  const temArquivo = !!arquivoSelecionado;
+
+  if (!temTexto && !temArquivo) return;
 
   if (!canalAtual) {
     alert("Selecione um canal antes de enviar!");
@@ -522,18 +548,26 @@ function enviar() {
   }
 
   if (!socket || !socket.connected) {
-    alert("Você está desconectado. Recarregue a página.");
+    alert("Você está desconectado.");
     return;
   }
 
   socket.emit("mensagem", {
     texto,
     canalId: canalAtual,
+
+    arquivo_url: arquivoSelecionado?.url || null,
+    arquivo_nome: arquivoSelecionado?.nomeOriginal || null,
+    arquivo_tipo: arquivoSelecionado?.tipo || null,
   });
 
   socket.emit("parouDigitar", canalAtual);
 
   input.value = "";
+
+  arquivoSelecionado = null;
+
+  removerPreviewArquivo();
   fecharSugestoes();
 }
 
@@ -717,6 +751,139 @@ function gerarCorUsuario(nome) {
   }
 
   return cores[Math.abs(hash) % cores.length];
+}
+
+function abrirSeletorArquivo() {
+  const input = document.getElementById("input-arquivo");
+
+  if (input) {
+    input.click();
+  }
+}
+
+async function uploadArquivo(event) {
+  const arquivo = event.target.files[0];
+
+  if (!arquivo) return;
+
+  const formData = new FormData();
+  formData.append("arquivo", arquivo);
+
+  try {
+    const res = await fetch("/chat/upload", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.erro || "Erro ao enviar arquivo");
+      return;
+    }
+
+    arquivoSelecionado = data;
+
+    mostrarPreviewArquivo(data);
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao enviar arquivo.");
+  }
+}
+
+function mostrarPreviewArquivo(arquivo) {
+  removerPreviewArquivo();
+
+  const area = document.querySelector(".chat-input-area");
+
+  if (!area) return;
+
+  const preview = document.createElement("div");
+  preview.classList.add("preview-arquivo");
+  preview.id = "preview-arquivo";
+
+  const nome = document.createElement("span");
+  nome.innerText = `📎 ${arquivo.nomeOriginal}`;
+
+  const remover = document.createElement("button");
+  remover.innerText = "✕";
+
+  remover.onclick = () => {
+    arquivoSelecionado = null;
+    removerPreviewArquivo();
+  };
+
+  preview.appendChild(nome);
+  preview.appendChild(remover);
+
+  area.prepend(preview);
+}
+
+function removerPreviewArquivo() {
+  const preview = document.getElementById("preview-arquivo");
+
+  if (preview) {
+    preview.remove();
+  }
+}
+function criarAnexoMensagem(url, nome, tipo) {
+  const container = document.createElement("div");
+  container.classList.add("anexo-mensagem");
+
+  const ehImagem = tipo && tipo.startsWith("image/");
+
+  if (ehImagem) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = nome || "Imagem enviada";
+    img.classList.add("anexo-imagem");
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.appendChild(img);
+
+    container.appendChild(link);
+  } else {
+    const card = document.createElement("a");
+    card.href = url;
+    card.target = "_blank";
+    card.rel = "noopener noreferrer";
+    card.classList.add("anexo-arquivo");
+
+    const icone = document.createElement("span");
+    icone.classList.add("anexo-icone");
+    icone.innerText = escolherIconeArquivo(tipo);
+
+    const info = document.createElement("div");
+
+    const titulo = document.createElement("strong");
+    titulo.innerText = nome || "Arquivo enviado";
+
+    const subtitulo = document.createElement("small");
+    subtitulo.innerText = "Clique para abrir ou baixar";
+
+    info.appendChild(titulo);
+    info.appendChild(subtitulo);
+
+    card.appendChild(icone);
+    card.appendChild(info);
+
+    container.appendChild(card);
+  }
+
+  return container;
+}
+
+function escolherIconeArquivo(tipo) {
+  if (!tipo) return "📎";
+  if (tipo.includes("pdf")) return "📄";
+  if (tipo.includes("word")) return "📝";
+  if (tipo.includes("excel") || tipo.includes("spreadsheet")) return "📊";
+  if (tipo.includes("text")) return "📃";
+  return "📎";
 }
 
 iniciar();

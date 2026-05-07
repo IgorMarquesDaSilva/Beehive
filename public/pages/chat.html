@@ -103,7 +103,13 @@
           <button type="button"><i>I</i></button>
           <button type="button">U</button>
           <button type="button">🔗</button>
-          <button type="button">📎</button>
+          <button type="button" onclick="abrirSeletorArquivo()">📎</button>
+          <input
+            type="file"
+            id="input-arquivo"
+            style="display:none"
+            onchange="uploadArquivo(event)"
+          />
         </div>
 
         <div class="message-box">

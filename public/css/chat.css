@@ -1185,3 +1185,86 @@ body {
   font-size: 12px;
   font-weight: 600;
 }
+.preview-arquivo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 11px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #444b5d;
+}
+
+.preview-arquivo button {
+  border: none;
+  background: #f2f3f8;
+  color: #7d8190;
+  border-radius: 7px;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+}
+
+.preview-arquivo button:hover {
+  background: #ffe9e9;
+  color: var(--danger);
+}
+
+.anexo-mensagem {
+  margin-top: 10px;
+}
+
+.anexo-imagem {
+  display: block;
+  max-width: 280px;
+  max-height: 260px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.anexo-arquivo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 230px;
+  max-width: 320px;
+  padding: 11px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(0,0,0,0.08);
+  text-decoration: none;
+  color: inherit;
+}
+
+.anexo-arquivo:hover {
+  background: rgba(255,255,255,0.8);
+}
+
+.anexo-icone {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(91,92,226,0.12);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.anexo-arquivo strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 3px;
+  overflow-wrap: anywhere;
+}
+
+.anexo-arquivo small {
+  display: block;
+  font-size: 11px;
+  opacity: 0.75;
+}
