@@ -428,6 +428,14 @@ function adicionarMensagem(id, nome, texto, propria = false, enviado_em = null) 
     div.classList.add("propria");
   }
 
+  const avatar = document.createElement("div");
+  avatar.classList.add("msg-avatar");
+  avatar.innerText = gerarIniciais(nome);
+  avatar.style.background = gerarCorUsuario(nome);
+
+  const conteudo = document.createElement("div");
+  conteudo.classList.add("msg-conteudo");
+
   const hora = enviado_em
     ? new Date(enviado_em).toLocaleTimeString("pt-BR", {
         hour: "2-digit",
@@ -466,8 +474,11 @@ function adicionarMensagem(id, nome, texto, propria = false, enviado_em = null) 
     balaoWrapper.appendChild(btnApagar);
   }
 
-  div.appendChild(autor);
-  div.appendChild(balaoWrapper);
+  conteudo.appendChild(autor);
+  conteudo.appendChild(balaoWrapper);
+
+  div.appendChild(avatar);
+  div.appendChild(conteudo);
 
   const container = document.getElementById("chat-mensagens");
   container.appendChild(div);
@@ -686,6 +697,26 @@ async function logout() {
 
   localStorage.removeItem("usuario");
   window.location.href = "/pages/login.html";
+}
+function gerarCorUsuario(nome) {
+  const cores = [
+    "#4f6df5",
+    "#10b981",
+    "#f97316",
+    "#8b5cf6",
+    "#ec4899",
+    "#06b6d4",
+    "#f59e0b",
+    "#ef4444",
+  ];
+
+  let hash = 0;
+
+  for (let i = 0; i < nome.length; i++) {
+    hash = nome.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return cores[Math.abs(hash) % cores.length];
 }
 
 iniciar();

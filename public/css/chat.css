@@ -805,3 +805,40 @@ body {
     transform: translateY(0);
   }
 }
+.mensagem {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.mensagem.propria {
+  flex-direction: row-reverse;
+}
+
+.msg-avatar {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+
+.msg-conteudo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mensagem.propria .autor {
+  text-align: right;
+}
+
+.mensagem.propria .msg-conteudo {
+  align-items: flex-end;
+}
