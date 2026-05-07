@@ -828,6 +828,10 @@ function removerPreviewArquivo() {
   }
 }
 function criarAnexoMensagem(url, nome, tipo) {
+  const urlCompleta = url.startsWith("http")
+  ? url
+  : `${window.location.origin}${url}`;
+
   const container = document.createElement("div");
   container.classList.add("anexo-mensagem");
 
@@ -835,12 +839,12 @@ function criarAnexoMensagem(url, nome, tipo) {
 
   if (ehImagem) {
     const img = document.createElement("img");
-    img.src = url;
+    img.src = urlCompleta;
     img.alt = nome || "Imagem enviada";
     img.classList.add("anexo-imagem");
 
     const link = document.createElement("a");
-    link.href = url;
+    link.href = urlCompleta;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.appendChild(img);
@@ -848,7 +852,7 @@ function criarAnexoMensagem(url, nome, tipo) {
     container.appendChild(link);
   } else {
     const card = document.createElement("a");
-    card.href = url;
+    card.href = urlCompleta;
     card.target = "_blank";
     card.rel = "noopener noreferrer";
     card.classList.add("anexo-arquivo");
