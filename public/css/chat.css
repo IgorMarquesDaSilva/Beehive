@@ -718,3 +718,40 @@ body {
   font-size: 11px;
   color: #8f94a8;
 }
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-shell {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+.chat-main {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chat-header {
+  flex-shrink: 0;
+}
+
+.chat-mensagens {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 24px;
+}
+
+.digitando-container,
+.chat-input-area {
+  flex-shrink: 0;
+}
+
+.chat-input-area {
+  position: relative;
+  z-index: 10;
+}
