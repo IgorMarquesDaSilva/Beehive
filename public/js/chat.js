@@ -17,7 +17,7 @@ let usuarios = [];
 let notificacoes = {};
 let mencoes = {};
 let arquivoSelecionado = null;
-let usuarioCargo = "usuario";
+let usuarioCargo = usuario.cargo || "usuario";
 
 async function iniciar() {
   try {
