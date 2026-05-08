@@ -1,7 +1,8 @@
 const express = require("express");
-const path = require("path");
 const multer = require("multer");
-const fs = require("fs");
+
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const { v2: cloudinary } = require("cloudinary");
 
 const router = express.Router();
 
@@ -16,28 +17,38 @@ const {
 
 const authMiddleware = require("../middlewares/authMiddleware");
 
-const uploadDir = path.join(__dirname, "../../public/uploads");
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const storage = new CloudinaryStorage({
+  cloudinary,
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
+  params: async (req, file) => ({
+    folder: "beehive",
 
-  filename: (req, file, cb) => {
-    const extensao = path.extname(file.originalname);
+    resource_type: "auto",
 
-    const nomeSeguro = file.originalname
-      .replace(extensao, "")
+    allowed_formats: [
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "webp",
+      "pdf",
+      "txt",
+      "doc",
+      "docx",
+      "xls",
+      "xlsx",
+    ],
+
+    public_id: `${Date.now()}-${file.originalname
       .replace(/\s+/g, "-")
-      .replace(/[^a-zA-Z0-9-_]/g, "")
-      .toLowerCase();
-
-    cb(null, `${Date.now()}-${nomeSeguro}${extensao}`);
-  },
+      .replace(/[^a-zA-Z0-9-_\.]/g, "")}`,
+  }),
 });
 
 const upload = multer({
@@ -45,27 +56,6 @@ const upload = multer({
 
   limits: {
     fileSize: 10 * 1024 * 1024,
-  },
-
-  fileFilter: (req, file, cb) => {
-    const tiposPermitidos = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-      "application/pdf",
-      "text/plain",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    ];
-
-    if (tiposPermitidos.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Tipo de arquivo não permitido."));
-    }
   },
 });
 
@@ -115,7 +105,7 @@ router.post(
     return res.json({
       nomeOriginal: req.file.originalname,
       nomeArquivo: req.file.filename,
-      url: `/uploads/${req.file.filename}`,
+      url: req.file.path,
       tipo: req.file.mimetype,
       tamanho: req.file.size,
     });
