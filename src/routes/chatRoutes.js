@@ -1,163 +1,86 @@
-const db = require("../config/db");
+const express = require("express");
+const multer = require("multer");
 
-async function getCanais(req, res) {
-  try {
-    const [canais] = await db.query("SELECT * FROM canais ORDER BY nome ASC");
-    res.json(canais);
-  } catch (err) {
-    console.error("Erro ao buscar canais:", err);
-    res.status(500).json({ erro: "Erro ao buscar canais" });
-  }
-}
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const { v2: cloudinary } = require("cloudinary");
 
-async function getMensagens(req, res) {
-  const { canalId } = req.params;
+const router = express.Router();
 
-  try {
-    const [mensagens] = await db.query(
-      `
-      SELECT
-        m.id,
-        m.texto,
-        m.enviado_em,
-        m.usuario_id,
-        m.arquivo_url,
-        m.arquivo_nome,
-        m.arquivo_tipo,
-        u.nome
-      FROM mensagens m
-      JOIN usuarios u ON m.usuario_id = u.id
-      WHERE m.canal_id = ?
-      ORDER BY m.enviado_em ASC
-      LIMIT 100
-      `,
-      [canalId]
-    );
-
-    res.json(mensagens);
-  } catch (err) {
-    console.error("Erro ao buscar mensagens:", err);
-    res.status(500).json({ erro: "Erro ao buscar mensagens" });
-  }
-}
-
-async function criarCanal(req, res) {
-  const { nome, descricao } = req.body;
-
-  if (!nome || nome.trim() === "") {
-    return res.status(400).json({
-      erro: "Nome do canal é obrigatório",
-    });
-  }
-
-  try {
-    const nomeLimpo = nome.trim().toLowerCase();
-
-    const [result] = await db.query(
-      "INSERT INTO canais (nome, descricao) VALUES (?, ?)",
-      [nomeLimpo, descricao || ""]
-    );
-
-    res.json({
-      id: result.insertId,
-      nome: nomeLimpo,
-      descricao: descricao || "",
-    });
-  } catch (err) {
-    console.error("Erro ao criar canal:", err);
-
-    if (err.code === "ER_DUP_ENTRY") {
-      return res.status(400).json({
-        erro: "Canal já existe",
-      });
-    }
-
-    res.status(500).json({
-      erro: "Erro ao criar canal",
-    });
-  }
-}
-
-async function apagarMensagem(req, res) {
-  const { id } = req.params;
-
-  try {
-    const [results] = await db.query("SELECT * FROM mensagens WHERE id = ?", [
-      id,
-    ]);
-
-    if (results.length === 0) {
-      return res.status(404).json({
-        erro: "Mensagem não encontrada",
-      });
-    }
-
-    const mensagem = results[0];
-
-    if (Number(mensagem.usuario_id) !== Number(req.usuario.id)) {
-      return res.status(403).json({
-        erro: "Você não pode apagar essa mensagem",
-      });
-    }
-
-    await db.query("DELETE FROM mensagens WHERE id = ?", [id]);
-
-    res.json({
-      mensagem: "Mensagem apagada",
-      id: Number(id),
-      canalId: mensagem.canal_id,
-    });
-  } catch (err) {
-    console.error("Erro ao apagar mensagem:", err);
-    res.status(500).json({
-      erro: "Erro ao apagar mensagem",
-    });
-  }
-}
-
-async function getUsuarios(req, res) {
-  try {
-    const [usuarios] = await db.query(
-      "SELECT id, nome FROM usuarios ORDER BY nome ASC"
-    );
-
-    res.json(usuarios);
-  } catch (err) {
-    console.error("Erro ao buscar usuários:", err);
-    res.status(500).json({
-      erro: "Erro ao buscar usuários",
-    });
-  }
-}
-
-async function getMembrosVoz(req, res) {
-  const { canalId } = req.params;
-
-  try {
-    const [membros] = await db.query(
-      `
-      SELECT u.id, u.nome
-      FROM salas_voz sv
-      JOIN usuarios u ON sv.usuario_id = u.id
-      WHERE sv.canal_id = ?
-      `,
-      [canalId]
-    );
-
-    res.json(membros);
-  } catch (err) {
-    console.error("Erro ao buscar membros da voz:", err);
-    res.status(500).json({
-      erro: "Erro ao buscar membros da voz",
-    });
-  }
-}
-
-module.exports = {
+const {
   getCanais,
   getMensagens,
   criarCanal,
   apagarMensagem,
   getUsuarios,
   getMembrosVoz,
-};
+  apagarCanal,
+} = require("../controllers/chatController");
+
+const authMiddleware = require("../middlewares/authMiddleware");
+const adminMiddleware = require("../middlewares/adminMiddleware");
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => ({
+    folder: "beehive",
+    resource_type: "auto",
+    allowed_formats: [
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "webp",
+      "pdf",
+      "txt",
+      "doc",
+      "docx",
+      "xls",
+      "xlsx",
+    ],
+    public_id: `${Date.now()}-${file.originalname
+      .replace(/\s+/g, "-")
+      .replace(/[^a-zA-Z0-9-_.]/g, "")}`,
+  }),
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+});
+
+router.get("/canais", authMiddleware, getCanais);
+router.get("/mensagens/:canalId", authMiddleware, getMensagens);
+
+router.post("/canais", authMiddleware, adminMiddleware, criarCanal);
+router.delete("/canais/:id", authMiddleware, adminMiddleware, apagarCanal);
+
+router.delete("/mensagens/:id", authMiddleware, apagarMensagem);
+
+router.get("/usuarios", authMiddleware, getUsuarios);
+router.get("/voz/:canalId", authMiddleware, getMembrosVoz);
+
+router.post("/upload", authMiddleware, upload.single("arquivo"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      erro: "Nenhum arquivo enviado.",
+    });
+  }
+
+  return res.json({
+    nomeOriginal: req.file.originalname,
+    nomeArquivo: req.file.filename,
+    url: req.file.path,
+    tipo: req.file.mimetype,
+    tamanho: req.file.size,
+  });
+});
+
+module.exports = router;
