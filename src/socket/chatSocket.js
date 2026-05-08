@@ -1,12 +1,15 @@
 const db = require("../config/db");
 const jwt = require("jsonwebtoken");
 
+const {
+  usuarioPodeAcessarCanal,
+} = require("../controllers/chatController");
+
 function initSocket(io) {
   const usuariosOnline = new Map();
 
   function emitirUsuariosOnline() {
     const lista = Array.from(usuariosOnline.values());
-
     const usuariosUnicos = [];
 
     lista.forEach((usuario) => {
@@ -42,6 +45,7 @@ function initSocket(io) {
     usuariosOnline.set(socket.id, {
       id: usuario.id,
       nome: usuario.nome,
+      cargo: usuario.cargo || "usuario",
       emVoz: false,
     });
 
@@ -49,32 +53,59 @@ function initSocket(io) {
 
     console.log(`Usuário conectado: ${usuario.nome}`);
 
-    socket.on("entrarCanal", (canalId) => {
+    socket.on("entrarCanal", async (canalId) => {
       if (!canalId) return;
 
-      socket.rooms.forEach((room) => {
-        if (room !== socket.id && room.startsWith("canal_")) {
-          socket.leave(room);
+      try {
+        const podeAcessar = await usuarioPodeAcessarCanal(usuario, canalId);
+
+        if (!podeAcessar) {
+          socket.emit("erroCanal", {
+            mensagem: "Você não tem acesso a este canal",
+          });
+          return;
         }
-      });
 
-      socket.join(`canal_${canalId}`);
+        socket.rooms.forEach((room) => {
+          if (room !== socket.id && room.startsWith("canal_")) {
+            socket.leave(room);
+          }
+        });
+
+        socket.join(`canal_${canalId}`);
+      } catch (err) {
+        console.error("Erro ao entrar no canal:", err);
+      }
     });
 
-    socket.on("digitando", (canalId) => {
+    socket.on("digitando", async (canalId) => {
       if (!canalId) return;
 
-      socket.to(`canal_${canalId}`).emit("digitando", {
-        nome: usuario.nome,
-      });
+      try {
+        const podeAcessar = await usuarioPodeAcessarCanal(usuario, canalId);
+        if (!podeAcessar) return;
+
+        socket.to(`canal_${canalId}`).emit("digitando", {
+          nome: usuario.nome,
+        });
+      } catch (err) {
+        console.error("Erro no evento digitando:", err);
+      }
     });
 
-    socket.on("parouDigitar", (canalId) => {
+    socket.on("parouDigitar", async (canalId) => {
       if (!canalId) return;
 
-      socket.to(`canal_${canalId}`).emit("parouDigitar", {
-        nome: usuario.nome,
-      });
+      try {
+        const podeAcessar = await usuarioPodeAcessarCanal(usuario, canalId);
+        if (!podeAcessar) return;
+
+        socket.to(`canal_${canalId}`).emit("parouDigitar", {
+          nome: usuario.nome,
+        });
+      } catch (err) {
+        console.error("Erro no evento parouDigitar:", err);
+      }
     });
 
     socket.on(
@@ -88,15 +119,24 @@ function initSocket(io) {
       }) => {
         if (!canalId) return;
 
-        const textoLimpo =
-          typeof texto === "string" ? texto.trim() : "";
-
-        const temTexto = textoLimpo.length > 0;
-        const temArquivo = !!arquivo_url;
-
-        if (!temTexto && !temArquivo) return;
-
         try {
+          const podeAcessar = await usuarioPodeAcessarCanal(usuario, canalId);
+
+          if (!podeAcessar) {
+            socket.emit("erroCanal", {
+              mensagem: "Você não tem acesso para enviar mensagens aqui",
+            });
+            return;
+          }
+
+          const textoLimpo =
+            typeof texto === "string" ? texto.trim() : "";
+
+          const temTexto = textoLimpo.length > 0;
+          const temArquivo = !!arquivo_url;
+
+          if (!temTexto && !temArquivo) return;
+
           const [result] = await db.query(
             `
             INSERT INTO mensagens
@@ -127,7 +167,6 @@ function initSocket(io) {
             texto: textoLimpo,
             enviado_em: new Date(),
             canalId: Number(canalId),
-
             arquivo_url,
             arquivo_nome,
             arquivo_tipo,
@@ -137,9 +176,9 @@ function initSocket(io) {
         }
       }
     );
+
     socket.on("mensagemApagada", ({ id, canalId }) => {
       if (!id || !canalId) return;
-
       io.to(`canal_${canalId}`).emit("mensagemApagada", id);
     });
 
@@ -149,6 +188,15 @@ function initSocket(io) {
       if (!canalId) return;
 
       try {
+        const podeAcessar = await usuarioPodeAcessarCanal(usuario, canalId);
+
+        if (!podeAcessar) {
+          socket.emit("erroCanal", {
+            mensagem: "Você não tem acesso ao canal de voz",
+          });
+          return;
+        }
+
         await db.query("DELETE FROM salas_voz WHERE usuario_id = ?", [
           usuario.id,
         ]);

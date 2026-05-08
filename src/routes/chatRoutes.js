@@ -14,6 +14,9 @@ const {
   getUsuarios,
   getMembrosVoz,
   apagarCanal,
+  getMembrosCanal,
+  adicionarMembroCanal,
+  removerMembroCanal,
 } = require("../controllers/chatController");
 
 const authMiddleware = require("../middlewares/authMiddleware");
@@ -61,6 +64,27 @@ router.get("/mensagens/:canalId", authMiddleware, getMensagens);
 
 router.post("/canais", authMiddleware, adminMiddleware, criarCanal);
 router.delete("/canais/:id", authMiddleware, adminMiddleware, apagarCanal);
+
+router.get(
+  "/canais/:canalId/membros",
+  authMiddleware,
+  adminMiddleware,
+  getMembrosCanal
+);
+
+router.post(
+  "/canais/:canalId/membros",
+  authMiddleware,
+  adminMiddleware,
+  adicionarMembroCanal
+);
+
+router.delete(
+  "/canais/:canalId/membros/:usuarioId",
+  authMiddleware,
+  adminMiddleware,
+  removerMembroCanal
+);
 
 router.delete("/mensagens/:id", authMiddleware, apagarMensagem);
 

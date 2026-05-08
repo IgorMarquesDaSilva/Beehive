@@ -1,8 +1,59 @@
 const db = require("../config/db");
 
+function usuarioEhAdminOuModerador(usuario) {
+  return usuario?.cargo === "admin" || usuario?.cargo === "moderador";
+}
+
+async function usuarioPodeAcessarCanal(usuario, canalId) {
+  if (usuarioEhAdminOuModerador(usuario)) {
+    return true;
+  }
+
+  const [canais] = await db.query("SELECT id, privado FROM canais WHERE id = ?", [
+    canalId,
+  ]);
+
+  if (canais.length === 0) {
+    return false;
+  }
+
+  const canal = canais[0];
+
+  if (!canal.privado) {
+    return true;
+  }
+
+  const [membros] = await db.query(
+    "SELECT id FROM canal_membros WHERE canal_id = ? AND usuario_id = ?",
+    [canalId, usuario.id]
+  );
+
+  return membros.length > 0;
+}
+
 async function getCanais(req, res) {
   try {
-    const [canais] = await db.query("SELECT * FROM canais ORDER BY nome ASC");
+    let canais;
+
+    if (usuarioEhAdminOuModerador(req.usuario)) {
+      const [results] = await db.query("SELECT * FROM canais ORDER BY nome ASC");
+      canais = results;
+    } else {
+      const [results] = await db.query(
+        `
+        SELECT DISTINCT c.*
+        FROM canais c
+        LEFT JOIN canal_membros cm
+          ON cm.canal_id = c.id AND cm.usuario_id = ?
+        WHERE c.privado = 0 OR cm.usuario_id IS NOT NULL
+        ORDER BY c.nome ASC
+        `,
+        [req.usuario.id]
+      );
+
+      canais = results;
+    }
+
     res.json(canais);
   } catch (err) {
     console.error("Erro ao buscar canais:", err);
@@ -14,6 +65,14 @@ async function getMensagens(req, res) {
   const { canalId } = req.params;
 
   try {
+    const podeAcessar = await usuarioPodeAcessarCanal(req.usuario, canalId);
+
+    if (!podeAcessar) {
+      return res.status(403).json({
+        erro: "Você não tem acesso a este canal",
+      });
+    }
+
     const [mensagens] = await db.query(
       `
       SELECT
@@ -42,7 +101,7 @@ async function getMensagens(req, res) {
 }
 
 async function criarCanal(req, res) {
-  const { nome, descricao } = req.body;
+  const { nome, descricao, privado = false, membros = [] } = req.body;
 
   if (!nome || nome.trim() === "") {
     return res.status(400).json({
@@ -52,16 +111,29 @@ async function criarCanal(req, res) {
 
   try {
     const nomeLimpo = nome.trim().toLowerCase();
+    const privadoValor = privado ? 1 : 0;
 
     const [result] = await db.query(
-      "INSERT INTO canais (nome, descricao) VALUES (?, ?)",
-      [nomeLimpo, descricao || ""]
+      "INSERT INTO canais (nome, descricao, privado) VALUES (?, ?, ?)",
+      [nomeLimpo, descricao || "", privadoValor]
     );
 
+    const canalId = result.insertId;
+
+    if (privadoValor && Array.isArray(membros) && membros.length > 0) {
+      for (const usuarioId of membros) {
+        await db.query(
+          "INSERT IGNORE INTO canal_membros (canal_id, usuario_id) VALUES (?, ?)",
+          [canalId, usuarioId]
+        );
+      }
+    }
+
     res.json({
-      id: result.insertId,
+      id: canalId,
       nome: nomeLimpo,
       descricao: descricao || "",
+      privado: privadoValor,
     });
   } catch (err) {
     console.error("Erro ao criar canal:", err);
@@ -98,6 +170,7 @@ async function apagarCanal(req, res) {
       });
     }
 
+    await db.query("DELETE FROM canal_membros WHERE canal_id = ?", [id]);
     await db.query("DELETE FROM salas_voz WHERE canal_id = ?", [id]);
     await db.query("DELETE FROM mensagens WHERE canal_id = ?", [id]);
     await db.query("DELETE FROM canais WHERE id = ?", [id]);
@@ -131,7 +204,10 @@ async function apagarMensagem(req, res) {
 
     const mensagem = results[0];
 
-    if (Number(mensagem.usuario_id) !== Number(req.usuario.id)) {
+    if (
+      Number(mensagem.usuario_id) !== Number(req.usuario.id) &&
+      !usuarioEhAdminOuModerador(req.usuario)
+    ) {
       return res.status(403).json({
         erro: "Você não pode apagar essa mensagem",
       });
@@ -171,6 +247,14 @@ async function getMembrosVoz(req, res) {
   const { canalId } = req.params;
 
   try {
+    const podeAcessar = await usuarioPodeAcessarCanal(req.usuario, canalId);
+
+    if (!podeAcessar) {
+      return res.status(403).json({
+        erro: "Você não tem acesso a este canal de voz",
+      });
+    }
+
     const [membros] = await db.query(
       `
       SELECT u.id, u.nome
@@ -190,6 +274,81 @@ async function getMembrosVoz(req, res) {
   }
 }
 
+async function getMembrosCanal(req, res) {
+  const { canalId } = req.params;
+
+  try {
+    const [membros] = await db.query(
+      `
+      SELECT u.id, u.nome, u.email, u.cargo
+      FROM canal_membros cm
+      JOIN usuarios u ON cm.usuario_id = u.id
+      WHERE cm.canal_id = ?
+      ORDER BY u.nome ASC
+      `,
+      [canalId]
+    );
+
+    res.json(membros);
+  } catch (err) {
+    console.error("Erro ao buscar membros do canal:", err);
+    res.status(500).json({
+      erro: "Erro ao buscar membros do canal",
+    });
+  }
+}
+
+async function adicionarMembroCanal(req, res) {
+  const { canalId } = req.params;
+  const { usuarioId } = req.body;
+
+  if (!usuarioId) {
+    return res.status(400).json({
+      erro: "Usuário é obrigatório",
+    });
+  }
+
+  try {
+    await db.query(
+      "INSERT IGNORE INTO canal_membros (canal_id, usuario_id) VALUES (?, ?)",
+      [canalId, usuarioId]
+    );
+
+    res.json({
+      mensagem: "Usuário adicionado ao canal",
+      canalId: Number(canalId),
+      usuarioId: Number(usuarioId),
+    });
+  } catch (err) {
+    console.error("Erro ao adicionar membro ao canal:", err);
+    res.status(500).json({
+      erro: "Erro ao adicionar membro ao canal",
+    });
+  }
+}
+
+async function removerMembroCanal(req, res) {
+  const { canalId, usuarioId } = req.params;
+
+  try {
+    await db.query(
+      "DELETE FROM canal_membros WHERE canal_id = ? AND usuario_id = ?",
+      [canalId, usuarioId]
+    );
+
+    res.json({
+      mensagem: "Usuário removido do canal",
+      canalId: Number(canalId),
+      usuarioId: Number(usuarioId),
+    });
+  } catch (err) {
+    console.error("Erro ao remover membro do canal:", err);
+    res.status(500).json({
+      erro: "Erro ao remover membro do canal",
+    });
+  }
+}
+
 module.exports = {
   getCanais,
   getMensagens,
@@ -198,4 +357,8 @@ module.exports = {
   apagarMensagem,
   getUsuarios,
   getMembrosVoz,
+  getMembrosCanal,
+  adicionarMembroCanal,
+  removerMembroCanal,
+  usuarioPodeAcessarCanal,
 };
