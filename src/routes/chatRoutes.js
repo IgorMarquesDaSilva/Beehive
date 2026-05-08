@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const multer = require("multer");
+const fs = require("fs");
 
 const router = express.Router();
 
@@ -15,12 +16,20 @@ const {
 
 const authMiddleware = require("../middlewares/authMiddleware");
 
+const uploadDir = path.join(__dirname, "../../public/uploads");
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../../public/uploads"));
+    cb(null, uploadDir);
   },
+
   filename: (req, file, cb) => {
     const extensao = path.extname(file.originalname);
+
     const nomeSeguro = file.originalname
       .replace(extensao, "")
       .replace(/\s+/g, "-")
@@ -33,9 +42,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
+
   limits: {
     fileSize: 10 * 1024 * 1024,
   },
+
   fileFilter: (req, file, cb) => {
     const tiposPermitidos = [
       "image/jpeg",
@@ -59,26 +70,56 @@ const upload = multer({
 });
 
 router.get("/canais", authMiddleware, getCanais);
-router.get("/mensagens/:canalId", authMiddleware, getMensagens);
-router.post("/canais", authMiddleware, criarCanal);
-router.delete("/mensagens/:id", authMiddleware, apagarMensagem);
-router.get("/usuarios", authMiddleware, getUsuarios);
-router.get("/voz/:canalId", authMiddleware, getMembrosVoz);
 
-router.post("/upload", authMiddleware, upload.single("arquivo"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({
-      erro: "Nenhum arquivo enviado.",
+router.get(
+  "/mensagens/:canalId",
+  authMiddleware,
+  getMensagens
+);
+
+router.post(
+  "/canais",
+  authMiddleware,
+  criarCanal
+);
+
+router.delete(
+  "/mensagens/:id",
+  authMiddleware,
+  apagarMensagem
+);
+
+router.get(
+  "/usuarios",
+  authMiddleware,
+  getUsuarios
+);
+
+router.get(
+  "/voz/:canalId",
+  authMiddleware,
+  getMembrosVoz
+);
+
+router.post(
+  "/upload",
+  authMiddleware,
+  upload.single("arquivo"),
+  (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        erro: "Nenhum arquivo enviado.",
+      });
+    }
+
+    return res.json({
+      nomeOriginal: req.file.originalname,
+      nomeArquivo: req.file.filename,
+      url: `/uploads/${req.file.filename}`,
+      tipo: req.file.mimetype,
+      tamanho: req.file.size,
     });
   }
-
-  return res.json({
-    nomeOriginal: req.file.originalname,
-    nomeArquivo: req.file.filename,
-    url: `/uploads/${req.file.filename}`,
-    tipo: req.file.mimetype,
-    tamanho: req.file.size,
-  });
-});
+);
 
 module.exports = router;
