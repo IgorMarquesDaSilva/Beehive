@@ -25,7 +25,7 @@ function initSocket(io) {
     io.emit("usuariosOnline", usuariosUnicos);
   }
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
     const token = socket.handshake.auth?.token;
 
     if (!token) {
@@ -36,8 +36,22 @@ function initSocket(io) {
     let usuario;
 
     try {
-      usuario = jwt.verify(token, process.env.JWT_SECRET);
+      const tokenData = jwt.verify(token, process.env.JWT_SECRET);
+
+      const [usuarios] = await db.query(
+        "SELECT id, nome, email, cargo FROM usuarios WHERE id = ?",
+        [tokenData.id]
+      );
+
+      if (usuarios.length === 0) {
+        socket.disconnect();
+        return;
+      }
+
+      usuario = usuarios[0];
     } catch (err) {
+      console.error("Erro ao validar socket:", err);
+
       socket.disconnect();
       return;
     }
