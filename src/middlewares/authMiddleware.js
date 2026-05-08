@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
+const db = require("../config/db");
 
-function authMiddleware(req, res, next) {
+async function authMiddleware(req, res, next) {
   const token = req.cookies?.token;
 
   if (!token) {
@@ -9,9 +10,20 @@ function authMiddleware(req, res, next) {
 
   try {
     const dados = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuario = dados;
+
+    const [usuarios] = await db.query(
+      "SELECT id, nome, email, cargo FROM usuarios WHERE id = ?",
+      [dados.id]
+    );
+
+    if (usuarios.length === 0) {
+      return res.status(401).json({ erro: "Usuário não encontrado" });
+    }
+
+    req.usuario = usuarios[0];
+
     next();
-  } catch {
+  } catch (err) {
     return res.status(401).json({ erro: "Token inválido" });
   }
 }

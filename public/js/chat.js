@@ -13,6 +13,7 @@ let usuarios = [];
 let notificacoes = {};
 let mencoes = {};
 let arquivoSelecionado = null;
+let usuarioCargo = "usuario";
 
 async function iniciar() {
   try {
@@ -25,6 +26,7 @@ async function iniciar() {
     }
 
     const data = await res.json();
+    usuarioCargo = usuario.cargo || "usuario";
 
     if (!data.token) {
       localStorage.removeItem("usuario");
@@ -201,7 +203,9 @@ async function iniciar() {
 
 async function carregarCanais() {
   try {
-    const res = await fetch("/chat/canais", { credentials: "include" });
+    const res = await fetch("/chat/canais", {
+      credentials: "include",
+    });
 
     if (!res.ok) {
       throw new Error("Erro ao carregar canais");
@@ -210,20 +214,27 @@ async function carregarCanais() {
     const canais = await res.json();
 
     const lista = document.getElementById("lista-canais");
+
     lista.innerHTML = "";
 
     canais.forEach((canal) => {
       const div = document.createElement("div");
+
       div.classList.add("canal-item");
       div.setAttribute("data-canal-id", canal.id);
+
+      const esquerda = document.createElement("div");
+      esquerda.classList.add("canal-esquerda");
 
       const span = document.createElement("span");
       span.classList.add("canal-nome");
 
-      const textoCanal = document.createTextNode(`# ${canal.nome} `);
+      const textoCanal = document.createTextNode(canal.nome);
+
       span.appendChild(textoCanal);
 
       const badge = document.createElement("span");
+
       badge.classList.add("badge");
       badge.id = `badge-${canal.id}`;
       badge.style.display = "none";
@@ -231,16 +242,80 @@ async function carregarCanais() {
 
       span.appendChild(badge);
 
-      span.onclick = () => entrarCanalTexto(canal.id, canal.nome, div);
+      esquerda.appendChild(span);
+
+      esquerda.onclick = () =>
+        entrarCanalTexto(canal.id, canal.nome, div);
+
+      const direita = document.createElement("div");
+      direita.classList.add("canal-direita");
 
       const btnVoz = document.createElement("button");
+
       btnVoz.classList.add("btn-entrar-voz");
       btnVoz.setAttribute("data-canal-id", canal.id);
-      btnVoz.innerText = "🎙️ Entrar";
-      btnVoz.onclick = () => entrarVoz(canal.id, canal.nome);
+      btnVoz.innerText = "🎙️";
 
-      div.appendChild(span);
-      div.appendChild(btnVoz);
+      btnVoz.onclick = (e) => {
+        e.stopPropagation();
+        entrarVoz(canal.id, canal.nome);
+      };
+
+      direita.appendChild(btnVoz);
+
+      const podeExcluir =
+        usuarioCargo === "admin" ||
+        usuarioCargo === "moderador";
+
+      if (podeExcluir && canal.nome !== "geral") {
+        const btnExcluir = document.createElement("button");
+
+        btnExcluir.classList.add("btn-excluir-canal");
+        btnExcluir.innerText = "🗑";
+
+        btnExcluir.onclick = async (e) => {
+          e.stopPropagation();
+
+          const confirmar = confirm(
+            `Apagar canal "${canal.nome}"?`
+          );
+
+          if (!confirmar) return;
+
+          try {
+            const res = await fetch(`/chat/canais/${canal.id}`, {
+              method: "DELETE",
+              credentials: "include",
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+              alert(data.erro || "Erro ao apagar canal");
+              return;
+            }
+
+            if (Number(canalAtual) === Number(canal.id)) {
+              canalAtual = null;
+
+              document.getElementById("chat-mensagens").innerHTML = "";
+
+              document.getElementById("canal-ativo").innerText =
+                "Selecione um canal";
+            }
+
+            carregarCanais();
+          } catch (err) {
+            console.error(err);
+            alert("Erro ao apagar canal.");
+          }
+        };
+
+        direita.appendChild(btnExcluir);
+      }
+
+      div.appendChild(esquerda);
+      div.appendChild(direita);
 
       lista.appendChild(div);
     });

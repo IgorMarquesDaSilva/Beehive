@@ -78,6 +78,43 @@ async function criarCanal(req, res) {
   }
 }
 
+async function apagarCanal(req, res) {
+  const { id } = req.params;
+
+  try {
+    const [canais] = await db.query("SELECT * FROM canais WHERE id = ?", [id]);
+
+    if (canais.length === 0) {
+      return res.status(404).json({
+        erro: "Canal não encontrado",
+      });
+    }
+
+    const canal = canais[0];
+
+    if (canal.nome === "geral") {
+      return res.status(400).json({
+        erro: "O canal geral não pode ser apagado",
+      });
+    }
+
+    await db.query("DELETE FROM salas_voz WHERE canal_id = ?", [id]);
+    await db.query("DELETE FROM mensagens WHERE canal_id = ?", [id]);
+    await db.query("DELETE FROM canais WHERE id = ?", [id]);
+
+    res.json({
+      mensagem: "Canal apagado com sucesso",
+      id: Number(id),
+    });
+  } catch (err) {
+    console.error("Erro ao apagar canal:", err);
+
+    res.status(500).json({
+      erro: "Erro ao apagar canal",
+    });
+  }
+}
+
 async function apagarMensagem(req, res) {
   const { id } = req.params;
 
@@ -118,7 +155,7 @@ async function apagarMensagem(req, res) {
 async function getUsuarios(req, res) {
   try {
     const [usuarios] = await db.query(
-      "SELECT id, nome FROM usuarios ORDER BY nome ASC"
+      "SELECT id, nome, email, cargo FROM usuarios ORDER BY nome ASC"
     );
 
     res.json(usuarios);
@@ -157,6 +194,7 @@ module.exports = {
   getCanais,
   getMensagens,
   criarCanal,
+  apagarCanal,
   apagarMensagem,
   getUsuarios,
   getMembrosVoz,

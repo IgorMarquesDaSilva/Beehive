@@ -1268,3 +1268,43 @@ body {
   font-size: 11px;
   opacity: 0.75;
 }
+.canal-esquerda {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.canal-direita {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-excluir-canal {
+  border: none;
+  background: transparent;
+  color: #ff7b7b;
+  cursor: pointer;
+  opacity: 0;
+  transition: 0.2s;
+  font-size: 12px;
+}
+
+.canal-item:hover .btn-excluir-canal {
+  opacity: 1;
+}
+
+.btn-excluir-canal:hover {
+  transform: scale(1.08);
+}
+
+.btn-entrar-voz {
+  opacity: 0.7;
+  transition: 0.2s;
+}
+
+.canal-item:hover .btn-entrar-voz {
+  opacity: 1;
+}
