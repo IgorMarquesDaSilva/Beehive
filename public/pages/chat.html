@@ -214,13 +214,63 @@
   <div class="modal-overlay" id="modal-overlay" onclick="fecharModalCanal()"></div>
 
   <div class="modal" id="modal-canal">
-    <h3>Novo canal</h3>
-    <input type="text" id="canal-nome" placeholder="Nome do canal" />
-    <input type="text" id="canal-descricao" placeholder="Descrição opcional" />
+    <h3>✨ Criar canal</h3>
+
+    <input
+      type="text"
+      id="canal-nome"
+      placeholder="Nome do canal"
+    />
+
+    <input
+      type="text"
+      id="canal-descricao"
+      placeholder="Descrição opcional"
+    />
+
+    <div class="canal-privado-box">
+      <label class="checkbox-container">
+        <input
+          type="checkbox"
+          id="canal-privado"
+          onchange="toggleCanalPrivado()"
+        />
+
+        <span class="checkmark"></span>
+
+        <div>
+          <strong>Canal privado</strong>
+          <small>
+            Apenas membros convidados poderão acessar
+          </small>
+        </div>
+      </label>
+    </div>
+
+    <div
+      id="selecionar-membros"
+      class="selecionar-membros"
+      style="display:none"
+    >
+      <h4>👥 Selecionar membros</h4>
+
+      <div id="lista-membros-canal" class="lista-membros-canal"></div>
+    </div>
 
     <div class="modal-botoes">
-      <button class="btn-cancelar" onclick="fecharModalCanal()">Cancelar</button>
-      <button class="btn-criar" onclick="criarCanal()">Criar</button>
+      <button
+        class="btn-cancelar"
+        onclick="fecharModalCanal()"
+      >
+        Cancelar
+      </button>
+
+      <button
+        class="btn-criar"
+        onclick="criarCanal()"
+      >
+        Criar canal
+      </button>
     </div>
 
     <p class="erro" id="canal-erro"></p>

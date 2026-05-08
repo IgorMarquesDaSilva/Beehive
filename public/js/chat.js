@@ -27,7 +27,6 @@ async function iniciar() {
     }
 
     const data = await res.json();
-    usuarioCargo = usuario.cargo || "usuario";
 
     if (!data.token) {
       localStorage.removeItem("usuario");
@@ -50,6 +49,7 @@ async function iniciar() {
         socket.emit("entrarCanal", canalAtual);
       }
     });
+
     socket.on("usuariosOnline", (lista) => {
       renderizarUsuariosOnline(lista);
     });
@@ -64,13 +64,18 @@ async function iniciar() {
       window.location.href = "/pages/login.html";
     });
 
+    socket.on("erroCanal", (data) => {
+      alert(data.mensagem || "Você não tem acesso a este canal.");
+    });
+
     socket.on("mensagem", (data) => {
       if (Number(data.canalId) === Number(canalAtual)) {
         adicionarMensagem(
           data.id,
           data.nome,
           data.texto,
-          Number(data.usuarioId) === Number(usuario.id) || data.nome === usuario.nome,
+          Number(data.usuarioId) === Number(usuario.id) ||
+            data.nome === usuario.nome,
           data.enviado_em,
           data.arquivo_url,
           data.arquivo_nome,
@@ -88,14 +93,13 @@ async function iniciar() {
     });
 
     socket.on("digitando", (data) => {
-      document.getElementById("digitando-texto").innerText = `${data.nome} está digitando...`;
+      document.getElementById("digitando-texto").innerText =
+        `${data.nome} está digitando...`;
     });
 
     socket.on("parouDigitar", () => {
       document.getElementById("digitando-texto").innerText = "";
     });
-
-    // ========== EVENTOS DE VOZ ==========
 
     socket.on("membrosVoz", async (membros) => {
       if (!Array.isArray(membros)) return;
@@ -169,14 +173,17 @@ async function iniciar() {
 
     socket.on("chamadaRecebida", ({ de, nome }) => {
       chamadaDeSocketId = de;
-      document.getElementById("chamada-nome").innerText = `${nome} está te chamando...`;
+      document.getElementById("chamada-nome").innerText =
+        `${nome} está te chamando...`;
       document.getElementById("modal-chamada").style.display = "block";
       document.getElementById("modal-chamada-overlay").style.display = "block";
     });
 
     socket.on("chamadaAceita", async ({ de }) => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
         localStream = stream;
         await criarPeer(de, true);
       } catch (err) {
@@ -201,7 +208,6 @@ async function iniciar() {
   }
 }
 
-
 async function carregarCanais() {
   try {
     const res = await fetch("/chat/canais", { credentials: "include" });
@@ -218,9 +224,6 @@ async function carregarCanais() {
     const podeExcluir =
       usuarioCargo === "admin" || usuarioCargo === "moderador";
 
-    console.log("Cargo:", usuarioCargo);
-    console.log("Pode excluir canal:", podeExcluir);
-
     canais.forEach((canal) => {
       const div = document.createElement("div");
       div.classList.add("canal-item");
@@ -231,7 +234,7 @@ async function carregarCanais() {
 
       const nome = document.createElement("span");
       nome.classList.add("canal-nome");
-      nome.innerText = canal.nome;
+      nome.innerText = canal.privado ? `🔒 ${canal.nome}` : canal.nome;
 
       const badge = document.createElement("span");
       badge.classList.add("badge");
@@ -297,7 +300,6 @@ async function carregarCanais() {
 
       div.appendChild(esquerda);
       div.appendChild(direita);
-
       lista.appendChild(div);
     });
   } catch (err) {
@@ -305,6 +307,7 @@ async function carregarCanais() {
     alert("Erro ao carregar canais.");
   }
 }
+
 function renderizarUsuariosOnline(lista) {
   const container = document.getElementById("lista-online");
   if (!container) return;
@@ -313,7 +316,9 @@ function renderizarUsuariosOnline(lista) {
 
   if (!Array.isArray(lista)) return;
 
-  const usuariosFiltrados = lista.filter((u) => Number(u.id) !== Number(usuario.id));
+  const usuariosFiltrados = lista.filter(
+    (u) => Number(u.id) !== Number(usuario.id)
+  );
 
   usuariosFiltrados.forEach((u) => {
     const div = document.createElement("div");
@@ -355,7 +360,9 @@ function gerarIniciais(nome) {
     return partes[0].charAt(0).toUpperCase();
   }
 
-  return `${partes[0].charAt(0)}${partes[partes.length - 1].charAt(0)}`.toUpperCase();
+  return `${partes[0].charAt(0)}${partes[
+    partes.length - 1
+  ].charAt(0)}`.toUpperCase();
 }
 
 async function carregarUsuarios() {
@@ -435,7 +442,8 @@ async function carregarMensagens(canalId) {
     });
 
     if (!res.ok) {
-      throw new Error("Erro ao carregar mensagens");
+      const data = await res.json();
+      throw new Error(data.erro || "Erro ao carregar mensagens");
     }
 
     const mensagens = await res.json();
@@ -454,7 +462,7 @@ async function carregarMensagens(canalId) {
     });
   } catch (err) {
     console.error(err);
-    alert("Erro ao carregar mensagens.");
+    alert(err.message || "Erro ao carregar mensagens.");
   }
 }
 
@@ -539,7 +547,9 @@ function adicionarMensagem(
   }
 
   if (arquivo_url) {
-    balao.appendChild(criarAnexoMensagem(arquivo_url, arquivo_nome, arquivo_tipo));
+    balao.appendChild(
+      criarAnexoMensagem(arquivo_url, arquivo_nome, arquivo_tipo)
+    );
   }
 
   balaoWrapper.appendChild(balao);
@@ -611,7 +621,6 @@ function enviar() {
   socket.emit("mensagem", {
     texto,
     canalId: canalAtual,
-
     arquivo_url: arquivoSelecionado?.url || null,
     arquivo_nome: arquivoSelecionado?.nomeOriginal || null,
     arquivo_tipo: arquivoSelecionado?.tipo || null,
@@ -620,7 +629,6 @@ function enviar() {
   socket.emit("parouDigitar", canalAtual);
 
   input.value = "";
-
   arquivoSelecionado = null;
 
   removerPreviewArquivo();
@@ -716,6 +724,46 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+function toggleCanalPrivado() {
+  const checkbox = document.getElementById("canal-privado");
+  const membros = document.getElementById("selecionar-membros");
+
+  if (!checkbox || !membros) return;
+
+  membros.style.display = checkbox.checked ? "block" : "none";
+}
+
+function renderizarUsuariosCanalPrivado() {
+  const container = document.getElementById("lista-membros-canal");
+
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  usuarios.forEach((u) => {
+    if (Number(u.id) === Number(usuario.id)) return;
+
+    const item = document.createElement("div");
+    item.classList.add("membro-canal-item");
+
+    const label = document.createElement("label");
+
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.classList.add("check-membro-canal");
+    check.value = u.id;
+
+    const span = document.createElement("span");
+    span.innerText = `${u.nome} (${u.cargo || "usuario"})`;
+
+    label.appendChild(check);
+    label.appendChild(span);
+    item.appendChild(label);
+
+    container.appendChild(item);
+  });
+}
+
 function abrirModalCanal() {
   document.getElementById("modal-overlay").style.display = "block";
   document.getElementById("modal-canal").style.display = "block";
@@ -723,6 +771,15 @@ function abrirModalCanal() {
   document.getElementById("canal-erro").innerText = "";
   document.getElementById("canal-nome").value = "";
   document.getElementById("canal-descricao").value = "";
+
+  const privado = document.getElementById("canal-privado");
+
+  if (privado) {
+    privado.checked = false;
+  }
+
+  toggleCanalPrivado();
+  renderizarUsuariosCanalPrivado();
 }
 
 function fecharModalCanal() {
@@ -732,10 +789,21 @@ function fecharModalCanal() {
 
 async function criarCanal() {
   const nome = document.getElementById("canal-nome").value.trim();
-  const descricao = document.getElementById("canal-descricao").value.trim();
+
+  const descricao = document
+    .getElementById("canal-descricao")
+    .value.trim();
+
+  const privado =
+    document.getElementById("canal-privado")?.checked || false;
+
+  const membrosSelecionados = Array.from(
+    document.querySelectorAll(".check-membro-canal:checked")
+  ).map((el) => Number(el.value));
 
   if (!nome) {
-    document.getElementById("canal-erro").innerText = "Nome do canal é obrigatório";
+    document.getElementById("canal-erro").innerText =
+      "Nome do canal é obrigatório";
     return;
   }
 
@@ -749,6 +817,8 @@ async function criarCanal() {
       body: JSON.stringify({
         nome,
         descricao,
+        privado,
+        membros: membrosSelecionados,
       }),
     });
 
@@ -756,7 +826,7 @@ async function criarCanal() {
 
     if (res.ok) {
       fecharModalCanal();
-      carregarCanais();
+      await carregarCanais();
     } else {
       document.getElementById("canal-erro").innerText =
         data.erro || "Erro ao criar canal";
@@ -788,6 +858,7 @@ async function logout() {
   localStorage.removeItem("usuario");
   window.location.href = "/pages/login.html";
 }
+
 function gerarCorUsuario(nome) {
   const cores = [
     "#4f6df5",
@@ -840,7 +911,6 @@ async function uploadArquivo(event) {
     }
 
     arquivoSelecionado = data;
-
     mostrarPreviewArquivo(data);
   } catch (err) {
     console.error(err);
@@ -883,10 +953,11 @@ function removerPreviewArquivo() {
     preview.remove();
   }
 }
+
 function criarAnexoMensagem(url, nome, tipo) {
   const urlCompleta = url.startsWith("http")
-  ? url
-  : `${window.location.origin}${url}`;
+    ? url
+    : `${window.location.origin}${url}`;
 
   const container = document.createElement("div");
   container.classList.add("anexo-mensagem");
@@ -953,7 +1024,7 @@ async function inicializarChat() {
     (u) => Number(u.id) === Number(usuario.id)
   );
 
-  usuarioCargo = usuarioAtual?.cargo || "usuario";
+  usuarioCargo = usuarioAtual?.cargo || usuario.cargo || "usuario";
 
   await iniciar();
   await carregarCanais();

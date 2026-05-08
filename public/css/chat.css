@@ -1329,3 +1329,77 @@ body {
   font-size: 14px;
   opacity: 1;
 }
+.canal-privado-box {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.checkbox-container input {
+  margin-top: 4px;
+}
+
+.checkbox-container strong {
+  display: block;
+  color: #fff;
+  font-size: 14px;
+}
+
+.checkbox-container small {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.selecionar-membros {
+  margin-top: 18px;
+}
+
+.selecionar-membros h4 {
+  margin-bottom: 12px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.lista-membros-canal {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.membro-canal-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  transition: 0.2s;
+}
+
+.membro-canal-item:hover {
+  background: rgba(255,255,255,0.07);
+}
+
+.membro-canal-item label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  cursor: pointer;
+}
+
+.membro-canal-item span {
+  color: #fff;
+  font-size: 14px;
+}
