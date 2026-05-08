@@ -1,12 +1,10 @@
 const usuario = JSON.parse(localStorage.getItem("usuario"));
 
-if (usuario?.cargo) {
-  usuarioCargo = usuario.cargo;
-}
-
 if (!usuario) {
   window.location.href = "/pages/login.html";
 }
+
+let usuarioCargo = usuario.cargo || "usuario";
 
 document.getElementById("nome-usuario").innerText = usuario.nome;
 
@@ -17,7 +15,6 @@ let usuarios = [];
 let notificacoes = {};
 let mencoes = {};
 let arquivoSelecionado = null;
-let usuarioCargo = usuario.cargo || "usuario";
 
 async function iniciar() {
   try {
