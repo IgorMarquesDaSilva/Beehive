@@ -1308,3 +1308,24 @@ body {
 .canal-item:hover .btn-entrar-voz {
   opacity: 1;
 }
+.canal-esquerda {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.canal-direita {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-excluir-canal {
+  border: none;
+  background: transparent;
+  color: #ff6b6b;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 1;
+}

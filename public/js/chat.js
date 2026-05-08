@@ -207,55 +207,50 @@ async function iniciar() {
 
 async function carregarCanais() {
   try {
-    const res = await fetch("/chat/canais", {
-      credentials: "include",
-    });
+    const res = await fetch("/chat/canais", { credentials: "include" });
 
     if (!res.ok) {
       throw new Error("Erro ao carregar canais");
     }
 
     const canais = await res.json();
-
     const lista = document.getElementById("lista-canais");
 
     lista.innerHTML = "";
 
+    const podeExcluir =
+      usuarioCargo === "admin" || usuarioCargo === "moderador";
+
+    console.log("Cargo:", usuarioCargo);
+    console.log("Pode excluir canal:", podeExcluir);
+
     canais.forEach((canal) => {
       const div = document.createElement("div");
-
       div.classList.add("canal-item");
       div.setAttribute("data-canal-id", canal.id);
 
       const esquerda = document.createElement("div");
       esquerda.classList.add("canal-esquerda");
 
-      const span = document.createElement("span");
-      span.classList.add("canal-nome");
-
-      const textoCanal = document.createTextNode(canal.nome);
-
-      span.appendChild(textoCanal);
+      const nome = document.createElement("span");
+      nome.classList.add("canal-nome");
+      nome.innerText = canal.nome;
 
       const badge = document.createElement("span");
-
       badge.classList.add("badge");
       badge.id = `badge-${canal.id}`;
       badge.style.display = "none";
       badge.innerText = "●";
 
-      span.appendChild(badge);
+      nome.appendChild(badge);
+      esquerda.appendChild(nome);
 
-      esquerda.appendChild(span);
-
-      esquerda.onclick = () =>
-        entrarCanalTexto(canal.id, canal.nome, div);
+      esquerda.onclick = () => entrarCanalTexto(canal.id, canal.nome, div);
 
       const direita = document.createElement("div");
       direita.classList.add("canal-direita");
 
       const btnVoz = document.createElement("button");
-
       btnVoz.classList.add("btn-entrar-voz");
       btnVoz.setAttribute("data-canal-id", canal.id);
       btnVoz.innerText = "🎙️";
@@ -267,52 +262,37 @@ async function carregarCanais() {
 
       direita.appendChild(btnVoz);
 
-      const podeExcluir =
-        usuarioCargo === "admin" ||
-        usuarioCargo === "moderador";
-
       if (podeExcluir && canal.nome !== "geral") {
         const btnExcluir = document.createElement("button");
-
         btnExcluir.classList.add("btn-excluir-canal");
-        btnExcluir.innerText = "🗑";
+        btnExcluir.innerText = "🗑️";
+        btnExcluir.title = "Excluir canal";
 
         btnExcluir.onclick = async (e) => {
           e.stopPropagation();
 
-          const confirmar = confirm(
-            `Apagar canal "${canal.nome}"?`
-          );
+          if (!confirm(`Apagar canal "${canal.nome}"?`)) return;
 
-          if (!confirmar) return;
+          const res = await fetch(`/chat/canais/${canal.id}`, {
+            method: "DELETE",
+            credentials: "include",
+          });
 
-          try {
-            const res = await fetch(`/chat/canais/${canal.id}`, {
-              method: "DELETE",
-              credentials: "include",
-            });
+          const data = await res.json();
 
-            const data = await res.json();
-
-            if (!res.ok) {
-              alert(data.erro || "Erro ao apagar canal");
-              return;
-            }
-
-            if (Number(canalAtual) === Number(canal.id)) {
-              canalAtual = null;
-
-              document.getElementById("chat-mensagens").innerHTML = "";
-
-              document.getElementById("canal-ativo").innerText =
-                "Selecione um canal";
-            }
-
-            carregarCanais();
-          } catch (err) {
-            console.error(err);
-            alert("Erro ao apagar canal.");
+          if (!res.ok) {
+            alert(data.erro || "Erro ao apagar canal");
+            return;
           }
+
+          if (Number(canalAtual) === Number(canal.id)) {
+            canalAtual = null;
+            document.getElementById("chat-mensagens").innerHTML = "";
+            document.getElementById("canal-ativo").innerText =
+              "Selecione um canal";
+          }
+
+          carregarCanais();
         };
 
         direita.appendChild(btnExcluir);
