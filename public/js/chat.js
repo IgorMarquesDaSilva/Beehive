@@ -965,6 +965,17 @@ function escolherIconeArquivo(tipo) {
   return "📎";
 }
 
-iniciar();
-carregarCanais();
-carregarUsuarios();
+async function inicializarChat() {
+  await carregarUsuarios();
+
+  const usuarioAtual = usuarios.find(
+    (u) => Number(u.id) === Number(usuario.id)
+  );
+
+  usuarioCargo = usuarioAtual?.cargo || "usuario";
+
+  await iniciar();
+  await carregarCanais();
+}
+
+inicializarChat();
