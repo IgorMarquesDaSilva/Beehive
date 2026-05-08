@@ -1,5 +1,9 @@
 const usuario = JSON.parse(localStorage.getItem("usuario"));
 
+if (usuario?.cargo) {
+  usuarioCargo = usuario.cargo;
+}
+
 if (!usuario) {
   window.location.href = "/pages/login.html";
 }
