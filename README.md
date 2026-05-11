@@ -1,190 +1,287 @@
+````md
 <div align="center">
 
-```
-██████╗ ███████╗███████╗██╗  ██╗██╗██╗   ██╗███████╗
-██╔══██╗██╔════╝██╔════╝██║  ██║██║██║   ██║██╔════╝
-██████╔╝█████╗  █████╗  ███████║██║██║   ██║█████╗  
-██╔══██╗██╔══╝  ██╔══╝  ██╔══██║██║╚██╗ ██╔╝██╔══╝  
-██████╔╝███████╗███████╗██║  ██║██║ ╚████╔╝ ███████╗
-╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
-```
+# 🐝 Beehive
 
-**Plataforma de Comunicação Empresarial Interna**
+### Plataforma de Comunicação Empresarial em Tempo Real
 
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
-![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
-![Socket.io](https://img.shields.io/badge/Socket.io-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
-![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
-![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
+<img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" />
+<img src="https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white" />
+<img src="https://img.shields.io/badge/Socket.io-010101?style=for-the-badge&logo=socketdotio&logoColor=white" />
+<img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white" />
+<img src="https://img.shields.io/badge/WebRTC-FF6B00?style=for-the-badge" />
+<img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" />
+<img src="https://img.shields.io/badge/Cloudinary-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white" />
+<img src="https://img.shields.io/badge/Render-000000?style=for-the-badge&logo=render&logoColor=white" />
 
-🌐 **[Acesse o Beehive](https://beehive-production-9bd0.up.railway.app)**
+<br><br>
+
+💬 Chat em tempo real • 🎙️ Voz por canal • 🔒 Canais privados • 📁 Upload de arquivos
 
 </div>
 
 ---
 
-## 🐝 Sobre o Projeto
+# 📌 Sobre o Projeto
 
-O **Beehive** é uma plataforma SaaS de comunicação empresarial interna desenvolvida como protótipo acadêmico para o curso de Análise e Desenvolvimento de Sistemas. O projeto centraliza as interações corporativas em canais organizados por departamento, eliminando a fragmentação causada por e-mails, chats informais e reuniões excessivas.
+O **Beehive** é uma plataforma de comunicação empresarial desenvolvida para centralizar a comunicação interna de equipes e organizações em um único ambiente moderno e organizado.
 
-A plataforma foi construída com foco em **rastreabilidade**, **organização** e **comunicação em tempo real**, servindo como base para uma solução competitiva voltada a PMEs e startups.
+O sistema foi inspirado em plataformas como **Discord** e **Slack**, oferecendo comunicação em tempo real com canais organizados, permissões, chamadas de voz, compartilhamento de arquivos e gerenciamento de usuários.
 
----
-
-## ✨ Funcionalidades
-
-- 🔐 **Autenticação segura** — Login e cadastro com senha criptografada via bcrypt e sessão gerenciada por JWT em cookie httpOnly
-- 💬 **Chat em tempo real** — Mensagens instantâneas via WebSocket com Socket.io
-- 📢 **Canais por departamento** — Comunicação organizada em canais separados (#geral, #ti, #rh, #projetos)
-- ➕ **Criar canais** — Crie novos canais diretamente pela interface
-- 📜 **Histórico de mensagens** — Mensagens persistidas no banco e carregadas ao entrar no canal
-- ✍️ **Indicador de digitando** — Veja em tempo real quando alguém está digitando
-- ⏰ **Horário nas mensagens** — Cada mensagem exibe o horário de envio
-- 🗑️ **Apagar mensagens** — Autores podem apagar suas próprias mensagens
-- 👤 **Página de perfil** — Edite nome, bio e senha
-- 🎨 **Interface moderna** — Visual escuro com identidade própria
+O projeto foi desenvolvido como iniciativa acadêmica no curso de **Análise e Desenvolvimento de Sistemas**, mas foi estruturado com foco em arquitetura real de aplicações SaaS modernas.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+# ✨ Funcionalidades
 
-| Camada | Tecnologia |
-|--------|-----------|
+## 🔐 Autenticação e Segurança
+
+- Login e cadastro de usuários
+- Senhas criptografadas com bcrypt
+- Autenticação JWT
+- Cookies httpOnly
+- Middleware de proteção de rotas
+- Controle de permissões por cargo
+
+---
+
+## 💬 Chat em Tempo Real
+
+- Mensagens instantâneas com Socket.io
+- Histórico persistido no MySQL
+- Indicador de digitando
+- Horário nas mensagens
+- Exclusão de mensagens
+- Menções com @usuário
+- Notificações visuais por canal
+
+---
+
+## 🔒 Sistema de Permissões
+
+- Canais públicos
+- Canais privados
+- Controle de acesso por usuários
+- Admin e moderador
+- Exclusão de canais
+- Proteção completa no backend e Socket.io
+
+---
+
+## 🎙️ Comunicação por Voz
+
+- Voz em tempo real via WebRTC
+- Entrada por canal
+- Lista de participantes
+- Conexão peer-to-peer
+- Atualização em tempo real
+
+---
+
+## 📁 Compartilhamento de Arquivos
+
+- Upload de imagens
+- Upload de documentos
+- Integração com Cloudinary
+- Preview de arquivos
+- Visualização inline de imagens
+
+---
+
+## 👤 Perfil do Usuário
+
+- Alteração de nome
+- Alteração de senha
+- Bio personalizada
+- Avatar com iniciais
+
+---
+
+# 🖼️ Interface
+
+O Beehive possui:
+
+- Interface moderna
+- Tema escuro
+- Sidebar estilo Discord
+- Painel lateral inteligente
+- Organização visual corporativa
+- Layout responsivo
+
+---
+
+# 🛠️ Tecnologias Utilizadas
+
+| Categoria | Tecnologia |
+|---|---|
 | Runtime | Node.js |
-| Framework web | Express |
-| Tempo real | Socket.io |
+| Framework | Express |
+| Comunicação em tempo real | Socket.io |
+| Voz em tempo real | WebRTC |
 | Banco de dados | MySQL |
+| Upload de arquivos | Multer + Cloudinary |
 | Autenticação | JWT + bcrypt |
-| Front-end | HTML, CSS, JavaScript puro |
-| Deploy | Railway |
+| Front-end | HTML, CSS e JavaScript |
+| Deploy | Render |
+| Versionamento | Git + GitHub |
 
 ---
 
-## 📁 Estrutura do Projeto
+# 📁 Estrutura do Projeto
 
-```
+```bash
 beehive/
-├── src/
-│   ├── config/
-│   │   └── db.js                # Conexão com o MySQL
-│   ├── controllers/
-│   │   ├── authController.js    # Lógica de login, cadastro e logout
-│   │   └── chatController.js    # Lógica de canais e mensagens
-│   ├── routes/
-│   │   ├── authRoutes.js        # Rotas de autenticação
-│   │   └── chatRoutes.js        # Rotas do chat
-│   ├── middlewares/
-│   │   └── authMiddleware.js    # Verificação de token JWT
-│   └── socket/
-│       └── chatSocket.js        # Lógica do chat em tempo real
+│
 ├── public/
 │   ├── css/
-│   │   └── style.css            # Estilos globais
 │   ├── js/
-│   │   ├── login.js             # Lógica da tela de login
-│   │   ├── chat.js              # Lógica da tela de chat
-│   │   └── perfil.js            # Lógica da tela de perfil
 │   └── pages/
-│       ├── login.html           # Tela de login e cadastro
-│       ├── chat.html            # Tela principal do chat
-│       └── perfil.html          # Tela de perfil do usuário
-├── .env.example                 # Modelo de variáveis de ambiente
-├── .gitignore
+│
+├── src/
+│   ├── config/
+│   ├── controllers/
+│   ├── middlewares/
+│   ├── routes/
+│   └── socket/
+│
+├── .env
 ├── package.json
-└── server.js                    # Ponto de entrada da aplicação
-```
+├── server.js
+└── README.md
+````
 
 ---
 
-## 🚀 Como Rodar Localmente
+# ⚙️ Como Rodar Localmente
 
-### Pré-requisitos
-
-- [Node.js](https://nodejs.org/) instalado
-- [XAMPP](https://www.apachefriends.org/) com MySQL rodando
-
-### 1. Clone o repositório
+## 1️⃣ Clone o repositório
 
 ```bash
 git clone https://github.com/IgorMarquesDaSilva/Beehive.git
+```
+
+---
+
+## 2️⃣ Entre na pasta
+
+```bash
 cd Beehive
 ```
 
-### 2. Instale as dependências
+---
+
+## 3️⃣ Instale as dependências
 
 ```bash
 npm install
 ```
 
-### 3. Configure o ambiente
+---
 
-Crie um arquivo `.env` na raiz do projeto baseado no `.env.example`:
+## 4️⃣ Configure o arquivo .env
 
 ```env
 PORT=3000
+
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=beehive
 DB_PORT=3306
-JWT_SECRET=beehive_segredo_123
+
+JWT_SECRET=seu_token_jwt
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 ```
 
-> ⚠️ Se o seu MySQL tiver senha, preencha `DB_PASSWORD`.
+---
 
-### 4. Configure o banco de dados
-
-Abra o **phpMyAdmin** e execute o SQL disponível em `schema.sql`.
-
-### 5. Inicie o servidor
+## 5️⃣ Inicie o servidor
 
 ```bash
-node server.js
+npm start
 ```
 
-Acesse **http://localhost:3000** no navegador.
+---
+
+## 6️⃣ Acesse no navegador
+
+```txt
+http://localhost:3000
+```
 
 ---
 
-## ☁️ Deploy
+# ☁️ Deploy
 
-O Beehive está hospedado no **Railway** com banco de dados MySQL em nuvem.
+O projeto está hospedado no Render.
 
-🌐 **[beehive-production-9bd0.up.railway.app](https://beehive-production-9bd0.up.railway.app)**
+## 🌐 Link do sistema
 
-Para fazer deploy de uma nova versão basta dar `git push` — o Railway detecta automaticamente e atualiza o site.
-
----
-
-## 🔒 Segurança
-
-- Senhas armazenadas com hash **bcrypt**
-- Autenticação via **JWT** com expiração de 8 horas
-- Token armazenado em **cookie httpOnly** — inacessível pelo JavaScript do front
-- Rotas protegidas por middleware de autenticação no back-end
-- Credenciais fora do código-fonte via **variáveis de ambiente**
+```txt
+https://beehive-phmp.onrender.com
+```
 
 ---
 
-## 🗺️ Roadmap
+# 🔒 Segurança
 
-- [ ] Contagem de usuários online por canal
-- [ ] Notificações de novas mensagens
-- [ ] Busca no histórico de mensagens
-- [ ] Mencionar usuários com @
-- [ ] Integração com IA para resumo de conversas
+* JWT com expiração
+* Cookies httpOnly
+* Senhas criptografadas
+* Rotas protegidas
+* Validação de acesso em canais privados
+* Proteção no Socket.io
+* Controle de permissões por cargo
 
 ---
 
-## 📄 Contexto Acadêmico
+# 🚀 Roadmap
 
-Projeto desenvolvido para a disciplina de **Elaboração de Negócio Competitivo** do curso de Análise e Desenvolvimento de Sistemas. O Beehive foi concebido como uma plataforma SaaS com proposta de valor baseada na centralização da comunicação corporativa e geração de inteligência organizacional a partir do fluxo de conversas.
+* [x] Chat em tempo real
+* [x] Voz por canal
+* [x] Upload de arquivos
+* [x] Canais privados
+* [x] Sistema de permissões
+* [x] Admin e moderador
+* [ ] Compartilhamento de tela
+* [ ] Chamada de vídeo
+* [ ] Mensagens fixadas
+* [ ] Threads
+* [ ] Busca avançada
+* [ ] IA para resumo de canais
+* [ ] Painel administrativo
+* [ ] Notificações push
+
+---
+
+# 🎯 Objetivo do Projeto
+
+O objetivo do Beehive é criar uma solução moderna de comunicação empresarial capaz de centralizar mensagens, arquivos e comunicação por voz em uma única plataforma.
+
+Além do aprendizado acadêmico, o projeto também busca aplicar conceitos reais de:
+
+* Arquitetura de software
+* Sistemas distribuídos
+* Comunicação em tempo real
+* Segurança web
+* Experiência do usuário
+* Estrutura SaaS
+
+---
+
+# 👨‍💻 Desenvolvido por
+
+### Igor Marques da Silva
+
+Projeto acadêmico desenvolvido no curso de Análise e Desenvolvimento de Sistemas.
 
 ---
 
 <div align="center">
 
-Feito com 🐝 e muito Node.js
+### 🐝 Beehive — Comunicação inteligente para equipes modernas
 
 </div>
