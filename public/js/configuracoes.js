@@ -12,6 +12,7 @@ let canalEditando = null;
 document.addEventListener("DOMContentLoaded", async () => {
   await carregarUsuarios();
   await carregarCanaisConfig();
+  renderizarUsuariosConfig();
 });
 
 function trocarAba(aba) {
@@ -43,6 +44,10 @@ function trocarAba(aba) {
 
   document.getElementById("titulo-aba").innerText =
     titulos[aba] || "Configurações";
+
+  if (aba === "usuarios") {
+    renderizarUsuariosConfig();
+  }
 }
 
 async function carregarCanaisConfig() {
@@ -147,6 +152,125 @@ function renderizarCanaisConfig() {
     card.appendChild(actions);
     lista.appendChild(card);
   });
+}
+
+function renderizarUsuariosConfig() {
+  const abaUsuarios = document.getElementById("aba-usuarios");
+  if (!abaUsuarios) return;
+
+  abaUsuarios.innerHTML = `
+    <div class="section-top">
+      <div>
+        <h3>Gerenciamento de usuários</h3>
+        <p>Altere cargos e permissões dos membros do workspace.</p>
+      </div>
+    </div>
+
+    <div id="lista-usuarios-config" class="admin-list"></div>
+  `;
+
+  const lista = document.getElementById("lista-usuarios-config");
+
+  if (!usuarios || usuarios.length === 0) {
+    lista.innerHTML = "<p>Nenhum usuário encontrado.</p>";
+    return;
+  }
+
+  usuarios.forEach((u) => {
+    const card = document.createElement("div");
+    card.classList.add("admin-card");
+
+    const info = document.createElement("div");
+    info.classList.add("admin-card-info");
+
+    const nome = document.createElement("h4");
+    nome.innerText = u.nome;
+
+    const email = document.createElement("p");
+    email.innerText = u.email || "Sem email";
+
+    const badges = document.createElement("div");
+    badges.classList.add("admin-badges");
+
+    const badgeCargo = document.createElement("span");
+    badgeCargo.classList.add("badge", "public");
+    badgeCargo.innerText = u.cargo || "usuario";
+
+    badges.appendChild(badgeCargo);
+
+    info.appendChild(nome);
+    info.appendChild(email);
+    info.appendChild(badges);
+
+    const actions = document.createElement("div");
+    actions.classList.add("admin-actions");
+
+    const select = document.createElement("select");
+    select.classList.add("cargo-select");
+    select.value = u.cargo || "usuario";
+
+    ["usuario", "moderador", "admin"].forEach((cargo) => {
+      const option = document.createElement("option");
+      option.value = cargo;
+      option.innerText =
+        cargo === "usuario"
+          ? "Usuário"
+          : cargo === "moderador"
+          ? "Moderador"
+          : "Admin";
+
+      if ((u.cargo || "usuario") === cargo) {
+        option.selected = true;
+      }
+
+      select.appendChild(option);
+    });
+
+    const btnSalvar = document.createElement("button");
+    btnSalvar.classList.add("btn-manage");
+    btnSalvar.innerText = "Salvar";
+    btnSalvar.onclick = () => atualizarCargoUsuario(u.id, select.value);
+
+    actions.appendChild(select);
+    actions.appendChild(btnSalvar);
+
+    card.appendChild(info);
+    card.appendChild(actions);
+
+    lista.appendChild(card);
+  });
+}
+
+async function atualizarCargoUsuario(usuarioId, cargo) {
+  const confirmar = confirm(`Alterar cargo deste usuário para "${cargo}"?`);
+
+  if (!confirmar) return;
+
+  try {
+    const res = await fetch(`/chat/usuarios/${usuarioId}/cargo`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ cargo }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.erro || "Erro ao atualizar cargo");
+      return;
+    }
+
+    await carregarUsuarios();
+    renderizarUsuariosConfig();
+
+    alert("Cargo atualizado com sucesso.");
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao atualizar cargo.");
+  }
 }
 
 async function excluirCanal(canal) {

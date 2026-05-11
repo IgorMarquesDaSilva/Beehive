@@ -408,3 +408,15 @@
 .btn-salvar-canal {
   background: linear-gradient(135deg, #5865f2, #6e5eff) !important;
 }
+.cargo-select {
+  background: #10131d;
+  border: 1px solid rgba(255,255,255,0.08);
+
+  color: white;
+
+  padding: 10px 12px;
+
+  border-radius: 10px;
+
+  outline: none;
+}
