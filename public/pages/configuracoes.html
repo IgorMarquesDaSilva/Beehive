@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beehive - Configurações</title>
+
+  <link rel="stylesheet" href="/css/configuracoes.css" />
+</head>
+<body>
+
+  <div class="config-shell">
+
+    <aside class="config-sidebar">
+      <div class="config-logo">
+        <div class="logo-icon">🐝</div>
+        <div>
+          <h1>Beehive</h1>
+          <p>Administração</p>
+        </div>
+      </div>
+
+      <nav class="config-menu">
+        <button class="active" onclick="trocarAba('canais')"># Canais</button>
+        <button onclick="trocarAba('usuarios')">👥 Usuários</button>
+        <button onclick="trocarAba('permissoes')">🔐 Permissões</button>
+        <button onclick="trocarAba('voz')">🎙️ Voz</button>
+        <button onclick="trocarAba('integracoes')">🔗 Integrações</button>
+        <button onclick="trocarAba('aparencia')">🎨 Aparência</button>
+      </nav>
+
+      <div class="config-footer">
+        <a href="/pages/chat.html">← Voltar ao chat</a>
+      </div>
+    </aside>
+
+    <main class="config-main">
+      <header class="config-header">
+        <div>
+          <h2 id="titulo-aba">Canais</h2>
+          <p>Gerencie canais, membros e permissões do workspace.</p>
+        </div>
+      </header>
+
+      <section id="aba-canais" class="config-section active">
+        <div class="section-top">
+          <div>
+            <h3>Gerenciamento de canais</h3>
+            <p>Visualize canais públicos e privados do sistema.</p>
+          </div>
+        </div>
+
+        <div id="lista-canais-config" class="admin-list"></div>
+      </section>
+
+      <section id="aba-usuarios" class="config-section">
+        <h3>Usuários</h3>
+        <p>Em breve: gerenciamento de cargos e contas.</p>
+      </section>
+
+      <section id="aba-permissoes" class="config-section">
+        <h3>Permissões</h3>
+        <p>Em breve: regras avançadas de acesso.</p>
+      </section>
+
+      <section id="aba-voz" class="config-section">
+        <h3>Configurações de voz</h3>
+        <p>Em breve: permissões de chamada, vídeo e compartilhamento.</p>
+      </section>
+
+      <section id="aba-integracoes" class="config-section">
+        <h3>Integrações</h3>
+        <p>Em breve: Jira, Slack, ERP, CRM e Webhooks.</p>
+      </section>
+
+      <section id="aba-aparencia" class="config-section">
+        <h3>Aparência</h3>
+        <p>Em breve: tema, cores e personalização do workspace.</p>
+      </section>
+    </main>
+
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay"></div>
+
+  <div class="modal" id="modal-membros">
+    <h3>🔒 Gerenciar membros</h3>
+    <p id="modal-canal-nome"></p>
+
+    <div class="add-member-row">
+      <select id="select-usuario-canal">
+        <option value="">Selecionar usuário</option>
+      </select>
+
+      <button onclick="adicionarMembroCanal()">Adicionar</button>
+    </div>
+
+    <div id="lista-membros-canal" class="members-list"></div>
+
+    <div class="modal-actions">
+      <button onclick="fecharModalMembros()">Fechar</button>
+    </div>
+  </div>
+
+  <script src="/js/configuracoes.js"></script>
+</body>
+</html>
