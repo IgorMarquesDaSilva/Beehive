@@ -3,7 +3,9 @@ const usuario = JSON.parse(localStorage.getItem("usuario"));
 if (!usuario) {
   window.location.href = "/pages/login.html";
 }
-
+if(usuario?.cargo !== "admin" && usuario?.cargo !== "moderador"){
+  window.location.href = "/pages/chat.html";
+}
 let canais = [];
 let usuarios = [];
 let canalSelecionado = null;
