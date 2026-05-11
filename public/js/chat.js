@@ -108,6 +108,29 @@ async function iniciar() {
         }
       }
     });
+    socket.on("notificacaoMensagem", (data) => {
+      const mensagemEhMinha =
+        Number(data.usuarioId) === Number(usuario.id);
+    
+      if (mensagemEhMinha) return;
+    
+      if (
+        Number(data.canalId) === Number(canalAtual)
+      ) {
+        return;
+      }
+    
+      adicionarNotificacao(data.canalId);
+    
+      tocarSomNotificacao();
+    
+      mostrarToast(
+        data.nome,
+        data.texto || "Enviou um arquivo"
+      );
+    
+      atualizarTituloNotificacao();
+    });
 
     socket.on("mensagemApagada", (id) => {
       const el = document.querySelector(`[data-id="${id}"]`);

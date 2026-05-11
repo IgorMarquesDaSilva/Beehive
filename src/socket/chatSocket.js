@@ -249,19 +249,26 @@ function initSocket(io) {
             ]
           );
 
+          const mensagemData = {
+            id: result.insertId,
+            nome: usuario.nome,
+            usuarioId: usuario.id,
+            texto: textoLimpo,
+            enviado_em: new Date(),
+            canalId: Number(canalId),
+            arquivo_url,
+            arquivo_nome,
+            arquivo_tipo,
+          };
+          
           io.to(`canal_${canalId}`).emit(
             "mensagem",
-            {
-              id: result.insertId,
-              nome: usuario.nome,
-              usuarioId: usuario.id,
-              texto: textoLimpo,
-              enviado_em: new Date(),
-              canalId: Number(canalId),
-              arquivo_url,
-              arquivo_nome,
-              arquivo_tipo,
-            }
+            mensagemData
+          );
+          
+          io.emit(
+            "notificacaoMensagem",
+            mensagemData
           );
         } catch (err) {
           console.error(
