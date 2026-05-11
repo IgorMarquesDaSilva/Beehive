@@ -10,6 +10,7 @@ const {
   getCanais,
   getMensagens,
   criarCanal,
+  atualizarCanal,
   apagarMensagem,
   getUsuarios,
   getMembrosVoz,
@@ -63,6 +64,7 @@ router.get("/canais", authMiddleware, getCanais);
 router.get("/mensagens/:canalId", authMiddleware, getMensagens);
 
 router.post("/canais", authMiddleware, adminMiddleware, criarCanal);
+router.put("/canais/:id", authMiddleware, adminMiddleware, atualizarCanal);
 router.delete("/canais/:id", authMiddleware, adminMiddleware, apagarCanal);
 
 router.get(
