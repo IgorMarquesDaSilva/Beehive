@@ -1433,3 +1433,57 @@ body {
 .status-offline {
   background: #80848e !important;
 }
+#toast-container {
+  position: fixed;
+
+  top: 20px;
+  right: 20px;
+
+  z-index: 99999;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+.toast {
+  background: #1f2229;
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  border-left: 4px solid #4f6df5;
+
+  color: white;
+
+  padding: 14px 16px;
+
+  border-radius: 12px;
+
+  min-width: 280px;
+
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+
+  animation: toastIn 0.25s ease;
+}
+
+.toast strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.toast small {
+  color: #b5bac1;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

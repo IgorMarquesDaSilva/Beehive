@@ -317,7 +317,14 @@
       <button class="btn-mute" id="btn-mute" onclick="toggleMute()">🎙️ Ativo</button>
     </div>
   </div>
+  <div id="toast-container"></div>
 
+  <audio id="notification-sound">
+    <source
+      src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=message-pop-alert-2354.mp3"
+      type="audio/mpeg"
+    />
+  </audio>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/chat.js"></script>
   <script src="/js/voz.js"></script>

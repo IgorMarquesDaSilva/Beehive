@@ -69,21 +69,43 @@ async function iniciar() {
     });
 
     socket.on("mensagem", (data) => {
-      if (Number(data.canalId) === Number(canalAtual)) {
+      const mensagemEhMinha =
+        Number(data.usuarioId) === Number(usuario.id);
+    
+      if (
+        Number(data.canalId) === Number(canalAtual)
+      ) {
         adicionarMensagem(
           data.id,
           data.nome,
           data.texto,
-          Number(data.usuarioId) === Number(usuario.id) ||
-            data.nome === usuario.nome,
+          mensagemEhMinha,
           data.enviado_em,
           data.arquivo_url,
           data.arquivo_nome,
           data.arquivo_tipo
         );
       } else {
-        const foiMencionado = verificarMencao(data.texto, usuario.nome);
-        adicionarNotificacao(data.canalId, foiMencionado);
+        const foiMencionado = verificarMencao(
+          data.texto,
+          usuario.nome
+        );
+    
+        adicionarNotificacao(
+          data.canalId,
+          foiMencionado
+        );
+    
+        if (!mensagemEhMinha) {
+          tocarSomNotificacao();
+    
+          mostrarToast(
+            data.nome,
+            data.texto || "Enviou um arquivo"
+          );
+    
+          atualizarTituloNotificacao();
+        }
       }
     });
 
@@ -439,6 +461,7 @@ function limparNotificacao(canalId) {
     badge.style.display = "none";
     badge.classList.remove("mencao");
   }
+  atualizarTituloNotificacao();
 }
 
 function entrarCanalTexto(canalId, nomeCanal, el) {
@@ -1091,5 +1114,49 @@ function atualizarCorStatus(status) {
   if (status === "offline") {
     dot.classList.add("status-offline");
   }
+}
+function tocarSomNotificacao() {
+  const audio = document.getElementById(
+    "notification-sound"
+  );
+
+  if (!audio) return;
+
+  audio.currentTime = 0;
+
+  audio.play().catch(() => {});
+}
+
+function mostrarToast(usuarioNome, mensagem) {
+  const container =
+    document.getElementById("toast-container");
+
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.classList.add("toast");
+
+  toast.innerHTML = `
+    <strong>${usuarioNome}</strong>
+    <small>${mensagem}</small>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 4000);
+}
+
+function atualizarTituloNotificacao() {
+  const total = Object.values(notificacoes)
+    .reduce((acc, val) => acc + val, 0);
+
+  if (total <= 0) {
+    document.title = "Beehive - Chat";
+    return;
+  }
+
+  document.title = `(${total}) Beehive - Chat`;
 }
 inicializarChat();
