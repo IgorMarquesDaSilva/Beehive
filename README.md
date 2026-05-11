@@ -285,3 +285,4 @@ Projeto acadêmico desenvolvido no curso de Análise e Desenvolvimento de Sistem
 ### 🐝 Beehive — Comunicação inteligente para equipes modernas
 
 </div>
+```
