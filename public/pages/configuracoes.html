@@ -101,7 +101,38 @@
       <button onclick="fecharModalMembros()">Fechar</button>
     </div>
   </div>
-
+  <div class="modal" id="modal-editar-canal">
+    <h3>✏️ Editar canal</h3>
+  
+    <input
+      type="text"
+      id="editar-canal-nome"
+      placeholder="Nome do canal"
+    />
+  
+    <textarea
+      id="editar-canal-descricao"
+      placeholder="Descrição do canal"
+    ></textarea>
+  
+    <label class="edit-private-check">
+      <input type="checkbox" id="editar-canal-privado" />
+      Canal privado
+    </label>
+  
+    <div class="modal-actions">
+      <button onclick="fecharModalEditarCanal()">
+        Cancelar
+      </button>
+  
+      <button
+        class="btn-salvar-canal"
+        onclick="salvarEdicaoCanal()"
+      >
+        Salvar alterações
+      </button>
+    </div>
+  </div>
   <script src="/js/configuracoes.js"></script>
 </body>
 </html>

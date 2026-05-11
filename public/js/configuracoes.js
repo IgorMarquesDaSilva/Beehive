@@ -7,6 +7,7 @@ if (!usuario) {
 let canais = [];
 let usuarios = [];
 let canalSelecionado = null;
+let canalEditando = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   await carregarUsuarios();
@@ -23,17 +24,13 @@ function trocarAba(aba) {
   });
 
   const section = document.getElementById(`aba-${aba}`);
+  if (section) section.classList.add("active");
 
-  if (section) {
-    section.classList.add("active");
-  }
+  const botao = Array.from(document.querySelectorAll(".config-menu button")).find(
+    (btn) => btn.getAttribute("onclick")?.includes(`'${aba}'`)
+  );
 
-  const botao = Array.from(document.querySelectorAll(".config-menu button"))
-    .find((btn) => btn.getAttribute("onclick")?.includes(`'${aba}'`));
-
-  if (botao) {
-    botao.classList.add("active");
-  }
+  if (botao) botao.classList.add("active");
 
   const titulos = {
     canais: "Canais",
@@ -44,7 +41,8 @@ function trocarAba(aba) {
     aparencia: "Aparência",
   };
 
-  document.getElementById("titulo-aba").innerText = titulos[aba] || "Configurações";
+  document.getElementById("titulo-aba").innerText =
+    titulos[aba] || "Configurações";
 }
 
 async function carregarCanaisConfig() {
@@ -53,12 +51,9 @@ async function carregarCanaisConfig() {
       credentials: "include",
     });
 
-    if (!res.ok) {
-      throw new Error("Erro ao carregar canais");
-    }
+    if (!res.ok) throw new Error("Erro ao carregar canais");
 
     canais = await res.json();
-
     renderizarCanaisConfig();
   } catch (err) {
     console.error(err);
@@ -72,9 +67,7 @@ async function carregarUsuarios() {
       credentials: "include",
     });
 
-    if (!res.ok) {
-      throw new Error("Erro ao carregar usuários");
-    }
+    if (!res.ok) throw new Error("Erro ao carregar usuários");
 
     usuarios = await res.json();
   } catch (err) {
@@ -85,7 +78,6 @@ async function carregarUsuarios() {
 
 function renderizarCanaisConfig() {
   const lista = document.getElementById("lista-canais-config");
-
   if (!lista) return;
 
   lista.innerHTML = "";
@@ -124,6 +116,15 @@ function renderizarCanaisConfig() {
     const actions = document.createElement("div");
     actions.classList.add("admin-actions");
 
+    if (canal.nome !== "geral") {
+      const btnEditar = document.createElement("button");
+      btnEditar.classList.add("btn-manage");
+      btnEditar.innerText = "Editar";
+      btnEditar.onclick = () => abrirModalEditarCanal(canal);
+
+      actions.appendChild(btnEditar);
+    }
+
     if (canal.privado) {
       const btnManage = document.createElement("button");
       btnManage.classList.add("btn-manage");
@@ -144,14 +145,12 @@ function renderizarCanaisConfig() {
 
     card.appendChild(info);
     card.appendChild(actions);
-
     lista.appendChild(card);
   });
 }
 
 async function excluirCanal(canal) {
   const confirmar = confirm(`Deseja realmente excluir o canal "${canal.nome}"?`);
-
   if (!confirmar) return;
 
   try {
@@ -171,6 +170,70 @@ async function excluirCanal(canal) {
   } catch (err) {
     console.error(err);
     alert("Erro ao excluir canal.");
+  }
+}
+
+function abrirModalEditarCanal(canal) {
+  canalEditando = canal;
+
+  document.getElementById("modal-overlay").style.display = "block";
+  document.getElementById("modal-editar-canal").style.display = "block";
+
+  document.getElementById("editar-canal-nome").value = canal.nome || "";
+  document.getElementById("editar-canal-descricao").value =
+    canal.descricao || "";
+  document.getElementById("editar-canal-privado").checked =
+    Number(canal.privado) === 1;
+}
+
+function fecharModalEditarCanal() {
+  canalEditando = null;
+
+  document.getElementById("modal-overlay").style.display = "none";
+  document.getElementById("modal-editar-canal").style.display = "none";
+}
+
+async function salvarEdicaoCanal() {
+  if (!canalEditando) return;
+
+  const nome = document.getElementById("editar-canal-nome").value.trim();
+  const descricao = document
+    .getElementById("editar-canal-descricao")
+    .value.trim();
+
+  const privado = document.getElementById("editar-canal-privado").checked;
+
+  if (!nome) {
+    alert("Nome do canal é obrigatório.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/chat/canais/${canalEditando.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        nome,
+        descricao,
+        privado,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.erro || "Erro ao editar canal");
+      return;
+    }
+
+    fecharModalEditarCanal();
+    await carregarCanaisConfig();
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao editar canal.");
   }
 }
 
@@ -200,12 +263,9 @@ async function carregarMembrosCanal() {
       credentials: "include",
     });
 
-    if (!res.ok) {
-      throw new Error("Erro ao carregar membros");
-    }
+    if (!res.ok) throw new Error("Erro ao carregar membros");
 
     const membros = await res.json();
-
     renderizarMembrosCanal(membros);
   } catch (err) {
     console.error(err);
@@ -215,7 +275,6 @@ async function carregarMembrosCanal() {
 
 function renderizarMembrosCanal(membros) {
   const lista = document.getElementById("lista-membros-canal");
-
   if (!lista) return;
 
   lista.innerHTML = "";
@@ -236,7 +295,9 @@ function renderizarMembrosCanal(membros) {
     nome.innerText = membro.nome;
 
     const email = document.createElement("small");
-    email.innerText = `${membro.email || "sem email"} • ${membro.cargo || "usuario"}`;
+    email.innerText = `${membro.email || "sem email"} • ${
+      membro.cargo || "usuario"
+    }`;
 
     info.appendChild(nome);
     info.appendChild(email);
@@ -255,7 +316,6 @@ function renderizarMembrosCanal(membros) {
 
 async function montarSelectUsuarios() {
   const select = document.getElementById("select-usuario-canal");
-
   if (!select) return;
 
   select.innerHTML = `<option value="">Selecionar usuário</option>`;
@@ -314,7 +374,6 @@ async function removerMembroCanal(usuarioId) {
   if (!canalSelecionado) return;
 
   const confirmar = confirm("Remover este usuário do canal?");
-
   if (!confirmar) return;
 
   try {

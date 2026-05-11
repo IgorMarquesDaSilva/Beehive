@@ -374,3 +374,37 @@
   
     cursor: pointer;
   }
+  #modal-editar-canal input,
+#modal-editar-canal textarea {
+  width: 100%;
+
+  background: #10131d;
+  border: 1px solid rgba(255,255,255,0.08);
+
+  color: white;
+
+  padding: 14px;
+
+  border-radius: 12px;
+
+  margin-top: 14px;
+}
+
+#modal-editar-canal textarea {
+  resize: none;
+  min-height: 120px;
+}
+
+.edit-private-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  margin-top: 18px;
+
+  color: #cfd3e3;
+}
+
+.btn-salvar-canal {
+  background: linear-gradient(135deg, #5865f2, #6e5eff) !important;
+}
