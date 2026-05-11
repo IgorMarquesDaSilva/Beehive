@@ -10,7 +10,6 @@ const initSocket = require("./src/socket/chatSocket");
 const db = require("./src/config/db");
 
 const app = express();
-
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -45,6 +44,21 @@ server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
 
+async function adicionarColunaSeNaoExistir(tabela, coluna, definicao) {
+  try {
+    const [colunas] = await db.query(`SHOW COLUMNS FROM ${tabela} LIKE ?`, [
+      coluna,
+    ]);
+
+    if (colunas.length === 0) {
+      await db.query(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${definicao}`);
+      console.log(`Coluna ${coluna} adicionada em ${tabela}`);
+    }
+  } catch (err) {
+    console.error(`Erro ao verificar coluna ${coluna}:`, err);
+  }
+}
+
 async function inicializarBanco() {
   let tentativas = 0;
   const maxTentativas = 10;
@@ -58,6 +72,8 @@ async function inicializarBanco() {
           email varchar(100) NOT NULL,
           senha varchar(255) NOT NULL,
           bio varchar(255) DEFAULT NULL,
+          cargo varchar(30) DEFAULT 'usuario',
+          status varchar(30) DEFAULT 'offline',
           criado_em datetime DEFAULT current_timestamp(),
           PRIMARY KEY (id),
           UNIQUE KEY email (email)
@@ -69,6 +85,7 @@ async function inicializarBanco() {
           id int(11) NOT NULL AUTO_INCREMENT,
           nome varchar(100) NOT NULL,
           descricao varchar(255) DEFAULT NULL,
+          privado tinyint(1) DEFAULT 0,
           PRIMARY KEY (id),
           UNIQUE KEY nome (nome)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -104,15 +121,68 @@ async function inicializarBanco() {
       `);
 
       await db.query(`
-        INSERT IGNORE INTO canais (nome, descricao) VALUES
-        ('geral', 'Canal geral da empresa'),
-        ('ti', 'Canal do departamento de TI'),
-        ('rh', 'Canal do departamento de RH'),
-        ('projetos', 'Canal de acompanhamento de projetos')
+        CREATE TABLE IF NOT EXISTS canal_membros (
+          id int(11) NOT NULL AUTO_INCREMENT,
+          canal_id int(11) NOT NULL,
+          usuario_id int(11) NOT NULL,
+          criado_em datetime DEFAULT current_timestamp(),
+          PRIMARY KEY (id),
+          FOREIGN KEY (canal_id) REFERENCES canais(id),
+          FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+          UNIQUE KEY canal_usuario (canal_id, usuario_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+
+      await adicionarColunaSeNaoExistir(
+        "usuarios",
+        "cargo",
+        "varchar(30) DEFAULT 'usuario'"
+      );
+
+      await adicionarColunaSeNaoExistir(
+        "usuarios",
+        "status",
+        "varchar(30) DEFAULT 'offline'"
+      );
+
+      await adicionarColunaSeNaoExistir(
+        "canais",
+        "privado",
+        "tinyint(1) DEFAULT 0"
+      );
+
+      await adicionarColunaSeNaoExistir(
+        "mensagens",
+        "arquivo_url",
+        "varchar(255) DEFAULT NULL"
+      );
+
+      await adicionarColunaSeNaoExistir(
+        "mensagens",
+        "arquivo_nome",
+        "varchar(255) DEFAULT NULL"
+      );
+
+      await adicionarColunaSeNaoExistir(
+        "mensagens",
+        "arquivo_tipo",
+        "varchar(100) DEFAULT NULL"
+      );
+
+      await db.query(`
+        INSERT IGNORE INTO canais (nome, descricao, privado) VALUES
+        ('geral', 'Canal geral da empresa', 0),
+        ('ti', 'Canal do departamento de TI', 0),
+        ('rh', 'Canal do departamento de RH', 0),
+        ('projetos', 'Canal de acompanhamento de projetos', 0)
+      `);
+
+      await db.query(`
+        UPDATE usuarios
+        SET status = 'offline'
       `);
 
       console.log("Banco inicializado com sucesso!");
-
       return;
     } catch (err) {
       tentativas++;

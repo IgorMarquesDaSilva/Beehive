@@ -1403,3 +1403,33 @@ body {
   color: #fff;
   font-size: 14px;
 }
+#status-select {
+  margin-top: 4px;
+  background: transparent;
+  border: none;
+  color: #b5bac1;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+#status-select option {
+  background: #1e1f22;
+  color: white;
+}
+
+.status-online {
+  background: #23a55a !important;
+}
+
+.status-ausente {
+  background: #f0b232 !important;
+}
+
+.status-ocupado {
+  background: #f23f43 !important;
+}
+
+.status-offline {
+  background: #80848e !important;
+}

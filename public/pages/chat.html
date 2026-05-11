@@ -63,13 +63,22 @@
         </div>
 
         <div class="online-user">
-          <div class="avatar azul">CA</div>
-          <div>
+          <div class="avatar azul">EU</div>
+
+          <div class="online-user-info">
             <strong id="nome-usuario">Carregando...</strong>
-            <small>Você</small>
+
+            <select id="status-select" onchange="alterarStatus()">
+              <option value="online">🟢 Online</option>
+              <option value="ausente">🌙 Ausente</option>
+              <option value="ocupado">⛔ Ocupado</option>
+              <option value="offline">⚫ Invisível</option>
+            </select>
           </div>
-          <span class="online-dot"></span>
+
+          <span class="online-dot status-online" id="meu-status-dot"></span>
         </div>
+
         <div id="lista-online" class="online-list"></div>
 
         <div id="lista-voz" class="voice-list"></div>
@@ -91,7 +100,12 @@
         <div class="header-actions">
           <button title="Notificações">🔔</button>
           <button title="Fixados">📌</button>
-          <button title="Configurações">⚙️</button>
+          <button
+            title="Configurações"
+            onclick="window.location.href='/pages/configuracoes.html'"
+          >
+            ⚙️
+          </button>
         </div>
       </header>
 
@@ -133,86 +147,85 @@
 
     <aside class="right-panel">
 
-  <div class="panel-card ai-card">
-    <div class="panel-icon">✨</div>
-    <div>
-      <h3>Beehive IA</h3>
-      <p>Resumo inteligente do canal atual</p>
-    </div>
-  </div>
-
-  <div class="panel-section">
-    <div class="panel-title">
-      <span>Resumo do canal</span>
-      <button type="button">Atualizar</button>
-    </div>
-
-    <div class="summary-box">
-      <p>
-        Selecione um canal para visualizar insights, mensagens importantes
-        e atividades recentes da equipe.
-      </p>
-    </div>
-  </div>
-
-  <div class="panel-section">
-    <div class="panel-title">
-      <span>Busca rápida</span>
-    </div>
-
-    <div class="search-box">
-      <input type="text" placeholder="Buscar no canal..." />
-    </div>
-  </div>
-
-  <div class="panel-section">
-    <div class="panel-title">
-      <span>Atividade recente</span>
-    </div>
-
-    <div class="activity-list">
-      <div class="activity-item">
-        <span class="activity-dot green"></span>
+      <div class="panel-card ai-card">
+        <div class="panel-icon">✨</div>
         <div>
-          <strong>Chat em tempo real</strong>
-          <small>Funcionando no Render</small>
+          <h3>Beehive IA</h3>
+          <p>Resumo inteligente do canal atual</p>
         </div>
       </div>
 
-      <div class="activity-item">
-        <span class="activity-dot blue"></span>
-        <div>
-          <strong>Voz por canal</strong>
-          <small>WebRTC conectado</small>
+      <div class="panel-section">
+        <div class="panel-title">
+          <span>Resumo do canal</span>
+          <button type="button">Atualizar</button>
+        </div>
+
+        <div class="summary-box">
+          <p>
+            Selecione um canal para visualizar insights, mensagens importantes
+            e atividades recentes da equipe.
+          </p>
         </div>
       </div>
 
-      <div class="activity-item">
-        <span class="activity-dot yellow"></span>
-        <div>
-          <strong>Interface atualizada</strong>
-          <small>Layout profissional aplicado</small>
+      <div class="panel-section">
+        <div class="panel-title">
+          <span>Busca rápida</span>
+        </div>
+
+        <div class="search-box">
+          <input type="text" placeholder="Buscar no canal..." />
         </div>
       </div>
-    </div>
-  </div>
 
-  <div class="panel-section">
-    <div class="panel-title">
-      <span>Próximos recursos</span>
-    </div>
+      <div class="panel-section">
+        <div class="panel-title">
+          <span>Atividade recente</span>
+        </div>
 
-    <div class="tag-list">
-      <span>Upload</span>
-      <span>Arquivos</span>
-      <span>DM</span>
-      <span>Permissões</span>
-      <span>IA</span>
-    </div>
-  </div>
+        <div class="activity-list">
+          <div class="activity-item">
+            <span class="activity-dot green"></span>
+            <div>
+              <strong>Chat em tempo real</strong>
+              <small>Funcionando no Render</small>
+            </div>
+          </div>
 
-</aside>
+          <div class="activity-item">
+            <span class="activity-dot blue"></span>
+            <div>
+              <strong>Voz por canal</strong>
+              <small>WebRTC conectado</small>
+            </div>
+          </div>
 
+          <div class="activity-item">
+            <span class="activity-dot yellow"></span>
+            <div>
+              <strong>Presença online</strong>
+              <small>Status em tempo real ativo</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">
+          <span>Próximos recursos</span>
+        </div>
+
+        <div class="tag-list">
+          <span>Upload</span>
+          <span>Arquivos</span>
+          <span>DM</span>
+          <span>Permissões</span>
+          <span>IA</span>
+        </div>
+      </div>
+
+    </aside>
   </div>
 
   <div class="modal-overlay" id="modal-overlay" onclick="fecharModalCanal()"></div>

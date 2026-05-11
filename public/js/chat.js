@@ -310,6 +310,7 @@ async function carregarCanais() {
 
 function renderizarUsuariosOnline(lista) {
   const container = document.getElementById("lista-online");
+
   if (!container) return;
 
   container.innerHTML = "";
@@ -335,10 +336,37 @@ function renderizarUsuariosOnline(lista) {
     nome.innerText = u.nome;
 
     const status = document.createElement("small");
-    status.innerText = u.emVoz ? "Em chamada" : "Online";
+
+    if (u.status === "ausente") {
+      status.innerText = "Ausente";
+    } else if (u.status === "ocupado") {
+      status.innerText = "Ocupado";
+    } else if (u.status === "offline") {
+      status.innerText = "Invisível";
+    } else {
+      status.innerText = u.emVoz
+        ? "Em chamada"
+        : "Online";
+    }
 
     const bolinha = document.createElement("span");
     bolinha.classList.add("online-dot");
+
+    if (u.status === "online") {
+      bolinha.classList.add("status-online");
+    }
+
+    if (u.status === "ausente") {
+      bolinha.classList.add("status-ausente");
+    }
+
+    if (u.status === "ocupado") {
+      bolinha.classList.add("status-ocupado");
+    }
+
+    if (u.status === "offline") {
+      bolinha.classList.add("status-offline");
+    }
 
     info.appendChild(nome);
     info.appendChild(status);
@@ -1029,5 +1057,39 @@ async function inicializarChat() {
   await iniciar();
   await carregarCanais();
 }
+function alterarStatus() {
+  const select = document.getElementById("status-select");
 
+  if (!select || !socket) return;
+
+  const status = select.value;
+
+  socket.emit("alterarStatus", status);
+
+  atualizarCorStatus(status);
+}
+
+function atualizarCorStatus(status) {
+  const dot = document.getElementById("meu-status-dot");
+
+  if (!dot) return;
+
+  dot.className = "online-dot";
+
+  if (status === "online") {
+    dot.classList.add("status-online");
+  }
+
+  if (status === "ausente") {
+    dot.classList.add("status-ausente");
+  }
+
+  if (status === "ocupado") {
+    dot.classList.add("status-ocupado");
+  }
+
+  if (status === "offline") {
+    dot.classList.add("status-offline");
+  }
+}
 inicializarChat();
