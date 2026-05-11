@@ -13,6 +13,7 @@ const {
   atualizarCanal,
   apagarMensagem,
   getUsuarios,
+  atualizarCargoUsuario,
   getMembrosVoz,
   apagarCanal,
   getMembrosCanal,
@@ -34,6 +35,7 @@ const storage = new CloudinaryStorage({
   params: async (req, file) => ({
     folder: "beehive",
     resource_type: "auto",
+
     allowed_formats: [
       "jpg",
       "jpeg",
@@ -47,6 +49,7 @@ const storage = new CloudinaryStorage({
       "xls",
       "xlsx",
     ],
+
     public_id: `${Date.now()}-${file.originalname
       .replace(/\s+/g, "-")
       .replace(/[^a-zA-Z0-9-_.]/g, "")}`,
@@ -55,17 +58,40 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({
   storage,
+
   limits: {
     fileSize: 10 * 1024 * 1024,
   },
 });
 
 router.get("/canais", authMiddleware, getCanais);
-router.get("/mensagens/:canalId", authMiddleware, getMensagens);
 
-router.post("/canais", authMiddleware, adminMiddleware, criarCanal);
-router.put("/canais/:id", authMiddleware, adminMiddleware, atualizarCanal);
-router.delete("/canais/:id", authMiddleware, adminMiddleware, apagarCanal);
+router.get(
+  "/mensagens/:canalId",
+  authMiddleware,
+  getMensagens
+);
+
+router.post(
+  "/canais",
+  authMiddleware,
+  adminMiddleware,
+  criarCanal
+);
+
+router.put(
+  "/canais/:id",
+  authMiddleware,
+  adminMiddleware,
+  atualizarCanal
+);
+
+router.delete(
+  "/canais/:id",
+  authMiddleware,
+  adminMiddleware,
+  apagarCanal
+);
 
 router.get(
   "/canais/:canalId/membros",
@@ -88,25 +114,50 @@ router.delete(
   removerMembroCanal
 );
 
-router.delete("/mensagens/:id", authMiddleware, apagarMensagem);
+router.get(
+  "/usuarios",
+  authMiddleware,
+  getUsuarios
+);
 
-router.get("/usuarios", authMiddleware, getUsuarios);
-router.get("/voz/:canalId", authMiddleware, getMembrosVoz);
+router.put(
+  "/usuarios/:id/cargo",
+  authMiddleware,
+  adminMiddleware,
+  atualizarCargoUsuario
+);
 
-router.post("/upload", authMiddleware, upload.single("arquivo"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({
-      erro: "Nenhum arquivo enviado.",
+router.get(
+  "/voz/:canalId",
+  authMiddleware,
+  getMembrosVoz
+);
+
+router.delete(
+  "/mensagens/:id",
+  authMiddleware,
+  apagarMensagem
+);
+
+router.post(
+  "/upload",
+  authMiddleware,
+  upload.single("arquivo"),
+  (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        erro: "Nenhum arquivo enviado.",
+      });
+    }
+
+    return res.json({
+      nomeOriginal: req.file.originalname,
+      nomeArquivo: req.file.filename,
+      url: req.file.path,
+      tipo: req.file.mimetype,
+      tamanho: req.file.size,
     });
   }
-
-  return res.json({
-    nomeOriginal: req.file.originalname,
-    nomeArquivo: req.file.filename,
-    url: req.file.path,
-    tipo: req.file.mimetype,
-    tamanho: req.file.size,
-  });
-});
+);
 
 module.exports = router;
