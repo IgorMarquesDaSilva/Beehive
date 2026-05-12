@@ -420,3 +420,196 @@
 
   outline: none;
 }
+
+/* POLIMENTO VISUAL - BRANCH codex/atualizar-css */
+
+:root {
+  --cfg-bg: #eef1f7;
+  --cfg-sidebar: #181b24;
+  --cfg-surface: #ffffff;
+  --cfg-surface-soft: #f7f9fd;
+  --cfg-text: #202432;
+  --cfg-muted: #747b8f;
+  --cfg-border: #dde2ed;
+  --cfg-brand: #4f6df5;
+  --cfg-accent: #16a3b8;
+  --cfg-danger: #df4b4b;
+}
+
+body {
+  background: var(--cfg-bg);
+  color: var(--cfg-text);
+}
+
+.config-shell {
+  background:
+    radial-gradient(circle at top left, rgba(79, 109, 245, 0.16), transparent 340px),
+    var(--cfg-bg);
+}
+
+.config-sidebar {
+  background:
+    linear-gradient(180deg, rgba(79, 109, 245, 0.13), transparent 240px),
+    var(--cfg-sidebar);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04);
+}
+
+.logo-icon,
+.config-menu button.active,
+.add-member-row button,
+.btn-salvar-canal {
+  background: linear-gradient(135deg, var(--cfg-brand), var(--cfg-accent)) !important;
+}
+
+.config-menu button {
+  border-radius: 8px;
+}
+
+.config-menu button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.config-main {
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.config-header {
+  background: rgba(255, 255, 255, 0.82);
+  border-bottom: 1px solid var(--cfg-border);
+  backdrop-filter: blur(12px);
+}
+
+.config-header h2,
+.section-top h3,
+.config-section h3 {
+  color: var(--cfg-text);
+}
+
+.config-header p,
+.section-top p,
+.config-section p,
+.admin-card-info p {
+  color: var(--cfg-muted);
+}
+
+.admin-card {
+  background: var(--cfg-surface);
+  border: 1px solid var(--cfg-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.admin-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
+.admin-card-info h4 {
+  color: var(--cfg-text);
+}
+
+.badge {
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.btn-manage,
+.btn-delete,
+.modal-actions button,
+.btn-remove,
+.admin-actions button {
+  border-radius: 8px;
+}
+
+.btn-manage {
+  background: rgba(79, 109, 245, 0.12);
+  color: var(--cfg-brand);
+}
+
+.btn-delete,
+.btn-remove {
+  background: rgba(223, 75, 75, 0.12);
+  color: var(--cfg-danger);
+}
+
+.modal {
+  background: var(--cfg-surface);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 10px;
+  color: var(--cfg-text);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+}
+
+.modal p,
+.member-info small {
+  color: var(--cfg-muted);
+}
+
+.add-member-row select,
+#modal-editar-canal input,
+#modal-editar-canal textarea,
+.cargo-select {
+  background: var(--cfg-surface-soft);
+  border: 1px solid var(--cfg-border);
+  border-radius: 8px;
+  color: var(--cfg-text);
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.add-member-row select:focus,
+#modal-editar-canal input:focus,
+#modal-editar-canal textarea:focus,
+.cargo-select:focus {
+  background: #ffffff;
+  border-color: rgba(79, 109, 245, 0.55);
+  box-shadow: 0 0 0 4px rgba(79, 109, 245, 0.1);
+}
+
+.member-item {
+  background: var(--cfg-surface-soft);
+  border: 1px solid var(--cfg-border);
+  border-radius: 8px;
+}
+
+.modal-actions button {
+  background: #eef1f7;
+  color: var(--cfg-text);
+}
+
+@media (max-width: 820px) {
+  body {
+    overflow: auto;
+  }
+
+  .config-shell {
+    min-height: 100dvh;
+    height: auto;
+    flex-direction: column;
+  }
+
+  .config-sidebar {
+    width: 100%;
+  }
+
+  .config-menu {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .config-header,
+  .config-section {
+    padding: 24px 18px;
+  }
+
+  .admin-card {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .modal {
+    width: min(520px, calc(100% - 28px));
+  }
+}

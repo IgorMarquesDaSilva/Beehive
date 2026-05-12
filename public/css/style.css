@@ -787,3 +787,171 @@ body {
   color: #888;
   padding: 6px 20px;
 }
+
+/* POLIMENTO VISUAL - BRANCH codex/atualizar-css */
+
+:root {
+  --page-bg: #eef1f7;
+  --surface: #ffffff;
+  --surface-soft: #f7f9fd;
+  --ink: #202432;
+  --muted: #747b8f;
+  --line: #dde2ed;
+  --brand: #4f6df5;
+  --brand-strong: #3854d8;
+  --accent: #16a3b8;
+  --danger-soft: #fff0f0;
+  --danger: #df4b4b;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(79, 109, 245, 0.18), transparent 320px),
+    radial-gradient(circle at bottom right, rgba(22, 163, 184, 0.16), transparent 340px),
+    var(--page-bg);
+  color: var(--ink);
+}
+
+.login-container,
+.perfil-container {
+  min-height: 100dvh;
+  padding: 24px;
+}
+
+.login-box,
+.perfil-box {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 10px;
+  color: var(--ink);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(14px);
+}
+
+.login-box {
+  max-width: 430px;
+  padding: 34px;
+}
+
+.perfil-box {
+  max-width: 560px;
+}
+
+.login-box h1,
+.perfil-header h1 {
+  color: var(--ink);
+  letter-spacing: 0;
+}
+
+.login-box h1 {
+  font-size: 30px;
+}
+
+.login-box p,
+.login-box .trocar,
+.perfil-form label,
+.btn-voltar {
+  color: var(--muted);
+}
+
+.login-box input,
+.perfil-form input,
+.modal input,
+.input-wrapper input,
+.chat-input input {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.login-box input:focus,
+.perfil-form input:focus,
+.modal input:focus,
+.input-wrapper input:focus,
+.chat-input input:focus {
+  background: #ffffff;
+  border-color: rgba(79, 109, 245, 0.55);
+  box-shadow: 0 0 0 4px rgba(79, 109, 245, 0.1);
+}
+
+.login-box button,
+.perfil-form button,
+.chat-input button,
+.btn-criar {
+  background: linear-gradient(135deg, var(--brand), var(--accent));
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 12px 24px rgba(79, 109, 245, 0.22);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.login-box button:hover,
+.perfil-form button:hover,
+.chat-input button:hover,
+.btn-criar:hover {
+  background: linear-gradient(135deg, var(--brand-strong), #11899b);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(79, 109, 245, 0.28);
+}
+
+.login-box .trocar span,
+.btn-voltar:hover,
+.btn-perfil,
+.mencao,
+.modal h3 {
+  color: var(--brand);
+}
+
+.login-box .erro,
+.erro {
+  color: var(--danger);
+}
+
+.avatar-circulo {
+  background: linear-gradient(135deg, var(--brand), var(--accent));
+  color: white;
+  box-shadow: 0 14px 28px rgba(79, 109, 245, 0.24);
+}
+
+.divisor {
+  border-top-color: var(--line);
+}
+
+.perfil-form h3 {
+  color: var(--ink);
+}
+
+.perfil-form input:disabled {
+  background: #eceff5;
+  color: #8a91a2;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+}
+
+.btn-cancelar {
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.btn-cancelar:hover {
+  background: #f3f5fa;
+}
+
+@media (max-width: 520px) {
+  .login-container,
+  .perfil-container {
+    padding: 16px;
+  }
+
+  .login-box,
+  .perfil-box {
+    padding: 26px 20px;
+  }
+}
