@@ -85,21 +85,25 @@ async function getMensagens(req, res) {
 
     const [mensagens] = await db.query(
       `
-      SELECT
-        m.id,
-        m.texto,
-        m.enviado_em,
-        m.usuario_id,
-        m.arquivo_url,
-        m.arquivo_nome,
-        m.arquivo_tipo,
-        u.nome
-      FROM mensagens m
-      JOIN usuarios u ON m.usuario_id = u.id
-      WHERE m.canal_id = ?
-        AND m.apagada_em IS NULL
-      ORDER BY m.enviado_em ASC
-      LIMIT 100
+      SELECT *
+      FROM (
+        SELECT
+          m.id,
+          m.texto,
+          m.enviado_em,
+          m.usuario_id,
+          m.arquivo_url,
+          m.arquivo_nome,
+          m.arquivo_tipo,
+          u.nome
+        FROM mensagens m
+        JOIN usuarios u ON m.usuario_id = u.id
+        WHERE m.canal_id = ?
+          AND m.apagada_em IS NULL
+        ORDER BY m.enviado_em DESC, m.id DESC
+        LIMIT 100
+      ) ultimas_mensagens
+      ORDER BY enviado_em ASC, id ASC
       `,
       [canalId]
     );
