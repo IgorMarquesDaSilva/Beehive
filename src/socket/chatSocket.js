@@ -1,5 +1,6 @@
 const db = require("../config/db");
 const jwt = require("jsonwebtoken");
+const { buscarUsuarioPorId } = require("../services/workspaceService");
 
 const {
   usuarioPodeAcessarCanal,
@@ -53,26 +54,12 @@ function initSocket(io) {
         process.env.JWT_SECRET
       );
 
-      const [usuarios] = await db.query(
-        `
-        SELECT
-          id,
-          nome,
-          email,
-          cargo,
-          status
-        FROM usuarios
-        WHERE id = ?
-        `,
-        [tokenData.id]
-      );
+      usuario = await buscarUsuarioPorId(tokenData.id);
 
-      if (usuarios.length === 0) {
+      if (!usuario) {
         socket.disconnect();
         return;
       }
-
-      usuario = usuarios[0];
     } catch (err) {
       console.error("Erro ao validar socket:", err);
 
@@ -231,16 +218,18 @@ function initSocket(io) {
             INSERT INTO mensagens
             (
               usuario_id,
+              membro_id,
               canal_id,
               texto,
               arquivo_url,
               arquivo_nome,
               arquivo_tipo
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             `,
             [
               usuario.id,
+              usuario.membro_id || null,
               canalId,
               textoLimpo,
               arquivo_url,
@@ -248,6 +237,22 @@ function initSocket(io) {
               arquivo_tipo,
             ]
           );
+
+          if (arquivo_url) {
+            await db.query(
+              `
+              INSERT INTO mensagem_anexos
+                (mensagem_id, nome_original, url, mime_type)
+              VALUES (?, ?, ?, ?)
+              `,
+              [
+                result.insertId,
+                arquivo_nome || "arquivo",
+                arquivo_url,
+                arquivo_tipo,
+              ]
+            );
+          }
 
           const mensagemData = {
             id: result.insertId,
@@ -319,11 +324,31 @@ function initSocket(io) {
 
         await db.query(
           `
-          INSERT IGNORE INTO salas_voz
-          (canal_id, usuario_id)
-          VALUES (?, ?)
+          UPDATE voz_participantes
+          SET saiu_em = NOW(),
+              ativo = 0
+          WHERE usuario_id = ?
+            AND ativo = 1
           `,
-          [canalId, usuario.id]
+          [usuario.id]
+        );
+
+        await db.query(
+          `
+          INSERT IGNORE INTO salas_voz
+          (canal_id, usuario_id, membro_id)
+          VALUES (?, ?, ?)
+          `,
+          [canalId, usuario.id, usuario.membro_id || null]
+        );
+
+        await db.query(
+          `
+          INSERT INTO voz_participantes
+            (canal_id, membro_id, usuario_id, entrou_em, ativo)
+          VALUES (?, ?, ?, NOW(), 1)
+          `,
+          [canalId, usuario.membro_id || null, usuario.id]
         );
 
         socket.rooms.forEach((room) => {
@@ -407,6 +432,18 @@ function initSocket(io) {
           DELETE FROM salas_voz
           WHERE canal_id = ?
           AND usuario_id = ?
+          `,
+          [canalId, usuario.id]
+        );
+
+        await db.query(
+          `
+          UPDATE voz_participantes
+          SET saiu_em = NOW(),
+              ativo = 0
+          WHERE canal_id = ?
+            AND usuario_id = ?
+            AND ativo = 1
           `,
           [canalId, usuario.id]
         );
@@ -510,6 +547,17 @@ function initSocket(io) {
           `
           DELETE FROM salas_voz
           WHERE usuario_id = ?
+          `,
+          [usuario.id]
+        );
+
+        await db.query(
+          `
+          UPDATE voz_participantes
+          SET saiu_em = NOW(),
+              ativo = 0
+          WHERE usuario_id = ?
+            AND ativo = 1
           `,
           [usuario.id]
         );
