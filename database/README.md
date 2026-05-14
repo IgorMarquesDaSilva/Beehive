@@ -34,6 +34,14 @@ Aplicar migrations:
 npm run db:migrate
 ```
 
+Restaurar um backup SQL em outro banco:
+
+```bash
+npm run db:restore -- --file backups/arquivo.sql --confirm
+```
+
+Use restore apenas em um banco novo ou em um banco que pode ser substituido.
+
 ## Como O Runner Funciona
 
 O script `scripts/migrate.js` cria a tabela `schema_migrations` e registra cada arquivo aplicado.
@@ -51,6 +59,28 @@ npm run db:backup
 O script usa a biblioteca `mysql2`, que já faz parte do projeto, e cria um arquivo `.sql` dentro da pasta `backups/`.
 
 A pasta `backups/` fica no `.gitignore` porque contém dados reais do banco e não deve ir para o GitHub.
+
+## Restore Sem Cliente MySQL
+
+Para migrar para outro provedor, como Aiven, aponte o `.env` para o banco novo e rode:
+
+```bash
+npm run db:restore -- --file backups/arquivo.sql --confirm
+```
+
+Depois rode:
+
+```bash
+npm run db:status
+```
+
+Se houver migration pendente, rode:
+
+```bash
+npm run db:migrate
+```
+
+O passo a passo completo para Aiven esta em `docs/guia-aiven.md`.
 
 ## Ordem Das Migrations
 

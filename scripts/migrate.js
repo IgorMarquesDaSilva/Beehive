@@ -2,28 +2,14 @@ const fs = require("fs/promises");
 const path = require("path");
 const crypto = require("crypto");
 const mysql = require("mysql2/promise");
-require("dotenv").config();
+const { buildDbOptions } = require("../src/config/databaseOptions");
 
 const MIGRATIONS_DIR = path.join(__dirname, "..", "database", "migrations");
 
 function getDbConfig() {
-  const databaseUrl = process.env.MYSQL_PUBLIC_URL || process.env.MYSQL_URL;
-
-  if (databaseUrl) {
-    return {
-      uri: databaseUrl,
-      multipleStatements: true,
-    };
-  }
-
-  return {
-    host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "beehive",
-    port: Number(process.env.DB_PORT || 3306),
+  return buildDbOptions({
     multipleStatements: true,
-  };
+  });
 }
 
 function checksum(content) {

@@ -1,32 +1,16 @@
 const fs = require("fs/promises");
 const path = require("path");
 const mysql = require("mysql2/promise");
-require("dotenv").config();
+const { buildDbOptions } = require("../src/config/databaseOptions");
 
 const BACKUP_DIR = path.join(__dirname, "..", "backups");
 
 function getDbConfig() {
-  const databaseUrl = process.env.MYSQL_PUBLIC_URL || process.env.MYSQL_URL;
-
-  if (databaseUrl) {
-    return {
-      uri: databaseUrl,
-      multipleStatements: true,
-      supportBigNumbers: true,
-      bigNumberStrings: true,
-    };
-  }
-
-  return {
-    host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "beehive",
-    port: Number(process.env.DB_PORT || 3306),
+  return buildDbOptions({
     multipleStatements: true,
     supportBigNumbers: true,
     bigNumberStrings: true,
-  };
+  });
 }
 
 function timestamp() {

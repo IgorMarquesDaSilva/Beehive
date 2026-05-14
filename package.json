@@ -6,6 +6,7 @@
   "scripts": {
     "db:backup": "node scripts/backup.js",
     "db:migrate": "node scripts/migrate.js",
+    "db:restore": "node scripts/restore.js",
     "db:status": "node scripts/migrate.js --status",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
