@@ -1,9 +1,12 @@
+require("dotenv").config();
+
 const mysql = require("mysql2/promise");
 
 let db;
+const databaseUrl = process.env.MYSQL_PUBLIC_URL || process.env.MYSQL_URL;
 
-if (process.env.MYSQL_URL) {
-  db = mysql.createPool(process.env.MYSQL_URL);
+if (databaseUrl) {
+  db = mysql.createPool(databaseUrl);
 } else {
   db = mysql.createPool({
     host: process.env.DB_HOST || "localhost",

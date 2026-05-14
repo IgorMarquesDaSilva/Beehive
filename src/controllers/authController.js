@@ -1,6 +1,11 @@
 const db = require("../config/db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const {
+  buscarUsuarioPorEmail,
+  buscarUsuarioPorId,
+  ensureWorkspaceMembership,
+} = require("../services/workspaceService");
 
 async function register(req, res) {
   const { nome, email, senha } = req.body;
@@ -8,10 +13,12 @@ async function register(req, res) {
   try {
     const hash = await bcrypt.hash(senha, 10);
 
-    await db.query(
+    const [result] = await db.query(
       "INSERT INTO usuarios (nome, email, senha, cargo) VALUES (?, ?, ?, ?)",
       [nome, email, hash, "usuario"]
     );
+
+    await ensureWorkspaceMembership(result.insertId, "usuario");
 
     res.json({ mensagem: "Usuário criado com sucesso" });
   } catch (err) {
@@ -28,16 +35,12 @@ async function login(req, res) {
   const { email, senha } = req.body;
 
   try {
-    const [results] = await db.query(
-      "SELECT id, nome, email, senha, cargo FROM usuarios WHERE email = ?",
-      [email]
-    );
+    const user = await buscarUsuarioPorEmail(email);
 
-    if (results.length === 0) {
+    if (!user) {
       return res.status(400).json({ erro: "Usuário não encontrado" });
     }
 
-    const user = results[0];
     const senhaValida = await bcrypt.compare(senha, user.senha);
 
     if (!senhaValida) {
@@ -84,16 +87,13 @@ async function logout(req, res) {
 
 async function getPerfil(req, res) {
   try {
-    const [results] = await db.query(
-      "SELECT id, nome, email, bio, cargo, criado_em FROM usuarios WHERE id = ?",
-      [req.usuario.id]
-    );
+    const usuario = await buscarUsuarioPorId(req.usuario.id);
 
-    if (results.length === 0) {
+    if (!usuario) {
       return res.status(404).json({ erro: "Usuário não encontrado" });
     }
 
-    res.json(results[0]);
+    res.json(usuario);
   } catch (err) {
     console.error("Erro ao buscar perfil:", err);
     res.status(500).json({ erro: "Erro interno" });

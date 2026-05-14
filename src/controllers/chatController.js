@@ -1,4 +1,10 @@
 const db = require("../config/db");
+const { registrarAuditoria } = require("../services/auditService");
+const {
+  atualizarCargoDoUsuario,
+  getMembroIdPorUsuario,
+  listarUsuariosComCargo,
+} = require("../services/workspaceService");
 
 function usuarioEhAdminOuModerador(usuario) {
   return usuario?.cargo === "admin" || usuario?.cargo === "moderador";
@@ -20,8 +26,16 @@ async function usuarioPodeAcessarCanal(usuario, canalId) {
   if (!canais[0].privado) return true;
 
   const [membros] = await db.query(
-    "SELECT id FROM canal_membros WHERE canal_id = ? AND usuario_id = ?",
-    [canalId, usuario.id]
+    `
+    SELECT id
+    FROM canal_membros
+    WHERE canal_id = ?
+      AND (
+        usuario_id = ?
+        OR (membro_id IS NOT NULL AND membro_id = ?)
+      )
+    `,
+    [canalId, usuario.id, usuario.membro_id || 0]
   );
 
   return membros.length > 0;
@@ -83,6 +97,7 @@ async function getMensagens(req, res) {
       FROM mensagens m
       JOIN usuarios u ON m.usuario_id = u.id
       WHERE m.canal_id = ?
+        AND m.apagada_em IS NULL
       ORDER BY m.enviado_em ASC
       LIMIT 100
       `,
@@ -110,20 +125,49 @@ async function criarCanal(req, res) {
     const privadoValor = privado ? 1 : 0;
 
     const [result] = await db.query(
-      "INSERT INTO canais (nome, descricao, privado) VALUES (?, ?, ?)",
-      [nomeLimpo, descricao || "", privadoValor]
+      `
+      INSERT INTO canais
+        (workspace_id, nome, descricao, tipo, privado, criado_por_membro_id)
+      VALUES (?, ?, ?, 'texto', ?, ?)
+      `,
+      [
+        req.usuario.workspace_id || null,
+        nomeLimpo,
+        descricao || "",
+        privadoValor,
+        req.usuario.membro_id || null,
+      ]
     );
 
     const canalId = result.insertId;
 
     if (privadoValor && Array.isArray(membros)) {
       for (const usuarioId of membros) {
+        const membroId = await getMembroIdPorUsuario(usuarioId);
+
         await db.query(
-          "INSERT IGNORE INTO canal_membros (canal_id, usuario_id) VALUES (?, ?)",
-          [canalId, usuarioId]
+          `
+          INSERT IGNORE INTO canal_membros
+            (canal_id, usuario_id, membro_id)
+          VALUES (?, ?, ?)
+          `,
+          [canalId, usuarioId, membroId]
         );
       }
     }
+
+    await registrarAuditoria({
+      usuario: req.usuario,
+      req,
+      acao: "canal.criar",
+      entidade: "canal",
+      entidadeId: canalId,
+      dadosDepois: {
+        nome: nomeLimpo,
+        descricao: descricao || "",
+        privado: privadoValor,
+      },
+    });
 
     res.json({
       id: canalId,
@@ -179,6 +223,21 @@ async function atualizarCanal(req, res) {
       [nomeLimpo, descricao || "", privadoValor, id]
     );
 
+    await registrarAuditoria({
+      usuario: req.usuario,
+      req,
+      acao: "canal.atualizar",
+      entidade: "canal",
+      entidadeId: Number(id),
+      dadosAntes: canais[0],
+      dadosDepois: {
+        id: Number(id),
+        nome: nomeLimpo,
+        descricao: descricao || "",
+        privado: privadoValor,
+      },
+    });
+
     res.json({
       mensagem: "Canal atualizado com sucesso",
       id: Number(id),
@@ -218,6 +277,15 @@ async function apagarCanal(req, res) {
         erro: "O canal geral não pode ser apagado",
       });
     }
+
+    await registrarAuditoria({
+      usuario: req.usuario,
+      req,
+      acao: "canal.apagar",
+      entidade: "canal",
+      entidadeId: Number(id),
+      dadosAntes: canais[0],
+    });
 
     await db.query("DELETE FROM canal_membros WHERE canal_id = ?", [id]);
     await db.query("DELETE FROM salas_voz WHERE canal_id = ?", [id]);
@@ -261,7 +329,18 @@ async function apagarMensagem(req, res) {
       });
     }
 
-    await db.query("DELETE FROM mensagens WHERE id = ?", [id]);
+    await db.query("UPDATE mensagens SET apagada_em = NOW() WHERE id = ?", [
+      id,
+    ]);
+
+    await registrarAuditoria({
+      usuario: req.usuario,
+      req,
+      acao: "mensagem.apagar",
+      entidade: "mensagem",
+      entidadeId: Number(id),
+      dadosAntes: mensagem,
+    });
 
     res.json({
       mensagem: "Mensagem apagada",
@@ -278,9 +357,7 @@ async function apagarMensagem(req, res) {
 
 async function getUsuarios(req, res) {
   try {
-    const [usuarios] = await db.query(
-      "SELECT id, nome, email, cargo FROM usuarios ORDER BY nome ASC"
-    );
+    const usuarios = await listarUsuariosComCargo();
 
     res.json(usuarios);
   } catch (err) {
@@ -326,7 +403,25 @@ async function atualizarCargoUsuario(req, res) {
       });
     }
 
-    await db.query("UPDATE usuarios SET cargo = ? WHERE id = ?", [cargo, id]);
+    const [antes] = await db.query(
+      "SELECT id, nome, email, cargo FROM usuarios WHERE id = ?",
+      [id]
+    );
+
+    await atualizarCargoDoUsuario(id, cargo);
+
+    await registrarAuditoria({
+      usuario: req.usuario,
+      req,
+      acao: "usuario.alterar_cargo",
+      entidade: "usuario",
+      entidadeId: Number(id),
+      dadosAntes: antes[0] || null,
+      dadosDepois: {
+        id: Number(id),
+        cargo,
+      },
+    });
 
     res.json({
       mensagem: "Cargo atualizado com sucesso",
@@ -378,9 +473,15 @@ async function getMembrosCanal(req, res) {
   try {
     const [membros] = await db.query(
       `
-      SELECT u.id, u.nome, u.email, u.cargo
+      SELECT
+        u.id,
+        u.nome,
+        u.email,
+        COALESCE(p.nome, u.cargo, 'usuario') AS cargo
       FROM canal_membros cm
       JOIN usuarios u ON cm.usuario_id = u.id
+      LEFT JOIN workspace_membros wm ON wm.id = cm.membro_id
+      LEFT JOIN papeis p ON p.id = wm.papel_id
       WHERE cm.canal_id = ?
       ORDER BY u.nome ASC
       `,
@@ -407,10 +508,29 @@ async function adicionarMembroCanal(req, res) {
   }
 
   try {
+    const membroId = await getMembroIdPorUsuario(usuarioId);
+
     await db.query(
-      "INSERT IGNORE INTO canal_membros (canal_id, usuario_id) VALUES (?, ?)",
-      [canalId, usuarioId]
+      `
+      INSERT IGNORE INTO canal_membros
+        (canal_id, usuario_id, membro_id)
+      VALUES (?, ?, ?)
+      `,
+      [canalId, usuarioId, membroId]
     );
+
+    await registrarAuditoria({
+      usuario: req.usuario,
+      req,
+      acao: "canal_membro.adicionar",
+      entidade: "canal_membro",
+      entidadeId: Number(canalId),
+      dadosDepois: {
+        canalId: Number(canalId),
+        usuarioId: Number(usuarioId),
+        membroId,
+      },
+    });
 
     res.json({
       mensagem: "Usuário adicionado ao canal",
@@ -433,6 +553,18 @@ async function removerMembroCanal(req, res) {
       "DELETE FROM canal_membros WHERE canal_id = ? AND usuario_id = ?",
       [canalId, usuarioId]
     );
+
+    await registrarAuditoria({
+      usuario: req.usuario,
+      req,
+      acao: "canal_membro.remover",
+      entidade: "canal_membro",
+      entidadeId: Number(canalId),
+      dadosAntes: {
+        canalId: Number(canalId),
+        usuarioId: Number(usuarioId),
+      },
+    });
 
     res.json({
       mensagem: "Usuário removido do canal",
