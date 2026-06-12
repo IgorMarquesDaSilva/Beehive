@@ -9,6 +9,7 @@ const router = express.Router();
 const {
   getCanais,
   getMensagens,
+  buscarMensagens,
   criarCanal,
   atualizarCanal,
   apagarMensagem,
@@ -65,6 +66,12 @@ const upload = multer({
 });
 
 router.get("/canais", authMiddleware, getCanais);
+
+router.get(
+  "/mensagens/:canalId/buscar",
+  authMiddleware,
+  buscarMensagens
+);
 
 router.get(
   "/mensagens/:canalId",

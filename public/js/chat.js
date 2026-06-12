@@ -15,6 +15,138 @@ let usuarios = [];
 let notificacoes = {};
 let mencoes = {};
 let arquivoSelecionado = null;
+let canaisCache = [];
+let mensagensCanalAtual = [];
+
+function setTextoSeguro(elemento, texto) {
+  if (elemento) elemento.innerText = texto;
+}
+
+function fecharCamadasFlutuantes() {
+  fecharSugestoes();
+}
+
+function renderizarEstadoMensagens(tipo, texto) {
+  const container = document.getElementById("chat-mensagens");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const estado = document.createElement("div");
+  estado.classList.add("chat-empty-state");
+  estado.dataset.tipo = tipo;
+
+  const titulo = document.createElement("strong");
+  titulo.innerText = texto;
+
+  const detalhe = document.createElement("span");
+  detalhe.innerText =
+    tipo === "loading"
+      ? "Buscando conversas recentes..."
+      : "Use o campo abaixo para iniciar a conversa da equipe.";
+
+  estado.appendChild(titulo);
+  estado.appendChild(detalhe);
+  container.appendChild(estado);
+}
+
+function atualizarResumoCanal() {
+  const resumo = document.getElementById("resumo-canal");
+  const atividade = document.getElementById("atividade-canal");
+
+  if (!resumo || !atividade) return;
+
+  resumo.innerHTML = "";
+  atividade.innerHTML = "";
+
+  if (!canalAtual) {
+    const p = document.createElement("p");
+    p.innerText =
+      "Selecione um canal para visualizar insights, mensagens importantes e atividades recentes da equipe.";
+    resumo.appendChild(p);
+    renderizarAtividadePadrao();
+    return;
+  }
+
+  const mensagensComTexto = mensagensCanalAtual.filter((m) => m.texto);
+  const anexos = mensagensCanalAtual.filter((m) => m.arquivo_url).length;
+  const autores = new Set(mensagensCanalAtual.map((m) => m.nome).filter(Boolean));
+  const ultima = mensagensCanalAtual[mensagensCanalAtual.length - 1];
+
+  const itens = [
+    `${mensagensCanalAtual.length} mensagem(ns) carregada(s) neste canal.`,
+    `${autores.size} participante(s) nas últimas mensagens.`,
+    anexos ? `${anexos} anexo(s) recente(s).` : "Nenhum anexo recente.",
+  ];
+
+  itens.forEach((item) => {
+    const p = document.createElement("p");
+    p.innerText = item;
+    resumo.appendChild(p);
+  });
+
+  if (mensagensComTexto.length > 0) {
+    const destaque = document.createElement("p");
+    destaque.classList.add("summary-highlight");
+    destaque.innerText = `Último assunto: ${mensagensComTexto[mensagensComTexto.length - 1].texto.slice(0, 120)}`;
+    resumo.appendChild(destaque);
+  }
+
+  const atividades = [
+    {
+      classe: "green",
+      titulo: "Mensagens recentes",
+      detalhe: ultima
+        ? `${ultima.nome || "Alguém"} enviou a última mensagem`
+        : "Sem mensagens neste canal",
+    },
+    {
+      classe: "blue",
+      titulo: "Participação",
+      detalhe: `${autores.size} pessoa(s) apareceram no histórico carregado`,
+    },
+    {
+      classe: "yellow",
+      titulo: "Arquivos",
+      detalhe: anexos ? `${anexos} arquivo(s) compartilhado(s)` : "Sem arquivos recentes",
+    },
+  ];
+
+  atividades.forEach(adicionarAtividade);
+}
+
+function adicionarAtividade(item) {
+  const atividade = document.getElementById("atividade-canal");
+  if (!atividade) return;
+
+  const div = document.createElement("div");
+  div.classList.add("activity-item");
+
+  const dot = document.createElement("span");
+  dot.classList.add("activity-dot", item.classe);
+
+  const texto = document.createElement("div");
+  const strong = document.createElement("strong");
+  strong.innerText = item.titulo;
+  const small = document.createElement("small");
+  small.innerText = item.detalhe;
+
+  texto.appendChild(strong);
+  texto.appendChild(small);
+  div.appendChild(dot);
+  div.appendChild(texto);
+  atividade.appendChild(div);
+}
+
+function renderizarAtividadePadrao() {
+  [
+    ["green", "Chat em tempo real", "Funcionando no Render"],
+    ["blue", "Voz por canal", "WebRTC conectado"],
+    ["yellow", "Presença online", "Status em tempo real ativo"],
+  ].forEach(([classe, titulo, detalhe]) =>
+    adicionarAtividade({ classe, titulo, detalhe })
+  );
+}
 
 async function iniciar() {
   try {
@@ -254,6 +386,12 @@ async function iniciar() {
 }
 
 async function carregarCanais() {
+  const lista = document.getElementById("lista-canais");
+
+  if (lista) {
+    lista.innerHTML = '<div class="sidebar-loading">Carregando canais...</div>';
+  }
+
   try {
     const res = await fetch("/chat/canais", { credentials: "include" });
 
@@ -262,9 +400,16 @@ async function carregarCanais() {
     }
 
     const canais = await res.json();
-    const lista = document.getElementById("lista-canais");
+    canaisCache = canais;
+
+    if (!lista) return;
 
     lista.innerHTML = "";
+
+    if (canais.length === 0) {
+      lista.innerHTML = '<div class="sidebar-loading">Nenhum canal disponível.</div>';
+      return;
+    }
 
     const podeExcluir =
       usuarioCargo === "admin" || usuarioCargo === "moderador";
@@ -332,9 +477,11 @@ async function carregarCanais() {
 
           if (Number(canalAtual) === Number(canal.id)) {
             canalAtual = null;
-            document.getElementById("chat-mensagens").innerHTML = "";
+            mensagensCanalAtual = [];
+            renderizarEstadoMensagens("empty", "Selecione um canal");
             document.getElementById("canal-ativo").innerText =
               "Selecione um canal";
+            atualizarResumoCanal();
           }
 
           carregarCanais();
@@ -349,7 +496,10 @@ async function carregarCanais() {
     });
   } catch (err) {
     console.error(err);
-    alert("Erro ao carregar canais.");
+
+    if (lista) {
+      lista.innerHTML = '<div class="sidebar-loading erro-lista">Erro ao carregar canais.</div>';
+    }
   }
 }
 
@@ -489,6 +639,8 @@ function limparNotificacao(canalId) {
 
 function entrarCanalTexto(canalId, nomeCanal, el) {
   canalAtual = canalId;
+  mensagensCanalAtual = [];
+  fecharCamadasFlutuantes();
 
   document.querySelectorAll(".canal-item").forEach((item) => {
     item.classList.remove("ativo");
@@ -497,8 +649,14 @@ function entrarCanalTexto(canalId, nomeCanal, el) {
   el.closest(".canal-item").classList.add("ativo");
 
   document.getElementById("canal-ativo").innerText = `# ${nomeCanal}`;
-  document.getElementById("chat-mensagens").innerHTML = "";
+  renderizarEstadoMensagens("loading", `Carregando #${nomeCanal}`);
   document.getElementById("digitando-texto").innerText = "";
+
+  const busca = document.getElementById("busca-canal");
+  const resultados = document.getElementById("resultados-busca");
+
+  if (busca) busca.value = "";
+  if (resultados) resultados.innerHTML = "";
 
   limparNotificacao(canalId);
 
@@ -521,6 +679,16 @@ async function carregarMensagens(canalId) {
     }
 
     const mensagens = await res.json();
+    mensagensCanalAtual = mensagens;
+
+    const container = document.getElementById("chat-mensagens");
+    if (container) container.innerHTML = "";
+
+    if (mensagens.length === 0) {
+      renderizarEstadoMensagens("empty", "Nenhuma mensagem ainda");
+      atualizarResumoCanal();
+      return;
+    }
 
     mensagens.forEach((m) => {
       adicionarMensagem(
@@ -534,9 +702,12 @@ async function carregarMensagens(canalId) {
         m.arquivo_tipo
       );
     });
+
+    atualizarResumoCanal();
   } catch (err) {
     console.error(err);
-    alert(err.message || "Erro ao carregar mensagens.");
+    renderizarEstadoMensagens("empty", err.message || "Erro ao carregar mensagens.");
+    atualizarResumoCanal();
   }
 }
 
@@ -574,6 +745,22 @@ function adicionarMensagem(
   arquivo_nome = null,
   arquivo_tipo = null
 ) {
+  if (canalAtual) {
+    const jaExiste = mensagensCanalAtual.some((m) => Number(m.id) === Number(id));
+
+    if (!jaExiste) {
+      mensagensCanalAtual.push({
+        id,
+        nome,
+        texto,
+        enviado_em,
+        arquivo_url,
+        arquivo_nome,
+        arquivo_tipo,
+      });
+    }
+  }
+
   const div = document.createElement("div");
   div.classList.add("mensagem");
   div.setAttribute("data-id", id);
@@ -644,8 +831,13 @@ function adicionarMensagem(
   div.appendChild(conteudo);
 
   const container = document.getElementById("chat-mensagens");
+  const empty = container.querySelector(".chat-empty-state");
+
+  if (empty) empty.remove();
+
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
+  atualizarResumoCanal();
 }
 
 async function apagarMensagem(id) {
@@ -839,6 +1031,8 @@ function renderizarUsuariosCanalPrivado() {
 }
 
 function abrirModalCanal() {
+  fecharCamadasFlutuantes();
+
   document.getElementById("modal-overlay").style.display = "block";
   document.getElementById("modal-canal").style.display = "block";
   document.getElementById("canal-nome").focus();
@@ -857,6 +1051,8 @@ function abrirModalCanal() {
 }
 
 function fecharModalCanal() {
+  fecharCamadasFlutuantes();
+
   document.getElementById("modal-overlay").style.display = "none";
   document.getElementById("modal-canal").style.display = "none";
 }
@@ -1159,10 +1355,14 @@ function mostrarToast(usuarioNome, mensagem) {
   const toast = document.createElement("div");
   toast.classList.add("toast");
 
-  toast.innerHTML = `
-    <strong>${usuarioNome}</strong>
-    <small>${mensagem}</small>
-  `;
+  const autor = document.createElement("strong");
+  autor.innerText = usuarioNome;
+
+  const texto = document.createElement("small");
+  texto.innerText = mensagem;
+
+  toast.appendChild(autor);
+  toast.appendChild(texto);
 
   container.appendChild(toast);
 
@@ -1182,4 +1382,83 @@ function atualizarTituloNotificacao() {
 
   document.title = `(${total}) Beehive - Chat`;
 }
+
+async function buscarNoCanal(termo) {
+  const resultados = document.getElementById("resultados-busca");
+
+  if (!resultados) return;
+
+  resultados.innerHTML = "";
+
+  if (!canalAtual) {
+    resultados.innerHTML = '<p class="search-empty">Selecione um canal.</p>';
+    return;
+  }
+
+  const termoLimpo = termo.trim();
+
+  if (termoLimpo.length < 2) {
+    resultados.innerHTML = "";
+    return;
+  }
+
+  resultados.innerHTML = '<p class="search-empty">Buscando...</p>';
+
+  try {
+    const res = await fetch(
+      `/chat/mensagens/${canalAtual}/buscar?q=${encodeURIComponent(termoLimpo)}`,
+      { credentials: "include" }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.erro || "Erro ao buscar mensagens");
+    }
+
+    resultados.innerHTML = "";
+
+    if (data.length === 0) {
+      resultados.innerHTML = '<p class="search-empty">Nenhuma mensagem encontrada.</p>';
+      return;
+    }
+
+    data.forEach((m) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.classList.add("search-result-item");
+
+      const autor = document.createElement("strong");
+      autor.innerText = m.nome;
+
+      const texto = document.createElement("span");
+      texto.innerText = m.texto || m.arquivo_nome || "Arquivo enviado";
+
+      const dataMsg = document.createElement("small");
+      dataMsg.innerText = new Date(m.enviado_em).toLocaleString("pt-BR");
+
+      item.appendChild(autor);
+      item.appendChild(texto);
+      item.appendChild(dataMsg);
+      resultados.appendChild(item);
+    });
+  } catch (err) {
+    console.error(err);
+    resultados.innerHTML = '<p class="search-empty">Erro ao buscar mensagens.</p>';
+  }
+}
+
+function configurarBuscaCanal() {
+  const input = document.getElementById("busca-canal");
+  if (!input) return;
+
+  let timeoutBusca = null;
+
+  input.addEventListener("input", () => {
+    clearTimeout(timeoutBusca);
+    timeoutBusca = setTimeout(() => buscarNoCanal(input.value), 300);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", configurarBuscaCanal);
 inicializarChat();

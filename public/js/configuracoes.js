@@ -10,6 +10,10 @@ let canais = [];
 let usuarios = [];
 let canalSelecionado = null;
 let canalEditando = null;
+let filtroCanais = "";
+let filtroTipoCanal = "todos";
+let filtroUsuarios = "";
+let filtroCargoUsuario = "todos";
 
 document.addEventListener("DOMContentLoaded", async () => {
   await carregarUsuarios();
@@ -50,6 +54,10 @@ function trocarAba(aba) {
   if (aba === "usuarios") {
     renderizarUsuariosConfig();
   }
+
+  if (["permissoes", "voz", "integracoes", "aparencia"].includes(aba)) {
+    renderizarAbaInformativa(aba);
+  }
 }
 
 async function carregarCanaisConfig() {
@@ -87,14 +95,63 @@ function renderizarCanaisConfig() {
   const lista = document.getElementById("lista-canais-config");
   if (!lista) return;
 
+  const abaCanais = document.getElementById("aba-canais");
+
+  if (abaCanais && !document.getElementById("filtro-canais-config")) {
+    abaCanais.querySelector(".section-top")?.insertAdjacentHTML(
+      "afterend",
+      `
+      <div class="admin-toolbar">
+        <input
+          type="search"
+          id="filtro-canais-config"
+          placeholder="Buscar canal..."
+        />
+        <select id="filtro-tipo-canal">
+          <option value="todos">Todos os canais</option>
+          <option value="publicos">Públicos</option>
+          <option value="privados">Privados</option>
+        </select>
+      </div>
+      `
+    );
+
+    document
+      .getElementById("filtro-canais-config")
+      ?.addEventListener("input", (event) => {
+        filtroCanais = event.target.value.toLowerCase();
+        renderizarCanaisConfig();
+      });
+
+    document
+      .getElementById("filtro-tipo-canal")
+      ?.addEventListener("change", (event) => {
+        filtroTipoCanal = event.target.value;
+        renderizarCanaisConfig();
+      });
+  }
+
   lista.innerHTML = "";
 
-  if (canais.length === 0) {
+  const canaisFiltrados = canais.filter((canal) => {
+    const correspondeTexto = `${canal.nome} ${canal.descricao || ""}`
+      .toLowerCase()
+      .includes(filtroCanais);
+    const privado = Number(canal.privado) === 1;
+    const correspondeTipo =
+      filtroTipoCanal === "todos" ||
+      (filtroTipoCanal === "privados" && privado) ||
+      (filtroTipoCanal === "publicos" && !privado);
+
+    return correspondeTexto && correspondeTipo;
+  });
+
+  if (canaisFiltrados.length === 0) {
     lista.innerHTML = "<p>Nenhum canal encontrado.</p>";
     return;
   }
 
-  canais.forEach((canal) => {
+  canaisFiltrados.forEach((canal) => {
     const card = document.createElement("div");
     card.classList.add("admin-card");
 
@@ -168,17 +225,61 @@ function renderizarUsuariosConfig() {
       </div>
     </div>
 
+    <div class="admin-toolbar">
+      <input
+        type="search"
+        id="filtro-usuarios-config"
+        placeholder="Buscar usuário por nome ou email..."
+        value="${filtroUsuarios}"
+      />
+      <select id="filtro-cargo-usuario">
+        <option value="todos">Todos os cargos</option>
+        <option value="usuario">Usuários</option>
+        <option value="moderador">Moderadores</option>
+        <option value="admin">Admins</option>
+      </select>
+    </div>
+
     <div id="lista-usuarios-config" class="admin-list"></div>
   `;
 
+  const filtroInput = document.getElementById("filtro-usuarios-config");
+  const filtroCargo = document.getElementById("filtro-cargo-usuario");
+
+  if (filtroInput) {
+    filtroInput.addEventListener("input", (event) => {
+      filtroUsuarios = event.target.value.toLowerCase();
+      renderizarUsuariosConfig();
+    });
+  }
+
+  if (filtroCargo) {
+    filtroCargo.value = filtroCargoUsuario;
+    filtroCargo.addEventListener("change", (event) => {
+      filtroCargoUsuario = event.target.value;
+      renderizarUsuariosConfig();
+    });
+  }
+
   const lista = document.getElementById("lista-usuarios-config");
 
-  if (!usuarios || usuarios.length === 0) {
+  const usuariosFiltrados = usuarios.filter((u) => {
+    const cargo = u.cargo || "usuario";
+    const correspondeTexto = `${u.nome} ${u.email || ""}`
+      .toLowerCase()
+      .includes(filtroUsuarios);
+    const correspondeCargo =
+      filtroCargoUsuario === "todos" || cargo === filtroCargoUsuario;
+
+    return correspondeTexto && correspondeCargo;
+  });
+
+  if (!usuariosFiltrados || usuariosFiltrados.length === 0) {
     lista.innerHTML = "<p>Nenhum usuário encontrado.</p>";
     return;
   }
 
-  usuarios.forEach((u) => {
+  usuariosFiltrados.forEach((u) => {
     const card = document.createElement("div");
     card.classList.add("admin-card");
 
@@ -233,6 +334,13 @@ function renderizarUsuariosConfig() {
     btnSalvar.innerText = "Salvar";
     btnSalvar.onclick = () => atualizarCargoUsuario(u.id, select.value);
 
+    if (Number(u.id) === Number(usuario.id) && (u.cargo || "usuario") === "admin") {
+      const aviso = document.createElement("small");
+      aviso.classList.add("admin-self-note");
+      aviso.innerText = "Sua conta admin";
+      actions.appendChild(aviso);
+    }
+
     actions.appendChild(select);
     actions.appendChild(btnSalvar);
 
@@ -241,6 +349,77 @@ function renderizarUsuariosConfig() {
 
     lista.appendChild(card);
   });
+}
+
+function renderizarAbaInformativa(aba) {
+  const section = document.getElementById(`aba-${aba}`);
+  if (!section) return;
+
+  const conteudos = {
+    permissoes: {
+      titulo: "Matriz de permissões",
+      descricao:
+        "Veja rapidamente o que cada cargo pode fazer hoje no workspace.",
+      cards: [
+        ["Usuário", "Participa dos canais permitidos, envia mensagens e arquivos."],
+        ["Moderador", "Gerencia canais, membros de canais privados e mensagens."],
+        ["Admin", "Controla cargos, canais, membros e configurações do workspace."],
+      ],
+    },
+    voz: {
+      titulo: "Voz e presença",
+      descricao:
+        "Acompanhe os recursos ativos para chamadas por canal e presença em tempo real.",
+      cards: [
+        ["Canais de voz", "Entrada e saída em salas por canal via WebRTC."],
+        ["Microfone", "Controle de mudo local disponível no painel de voz."],
+        ["Histórico", "Participantes ativos são registrados no banco."],
+      ],
+    },
+    integracoes: {
+      titulo: "Integrações planejadas",
+      descricao:
+        "Espaço preparado para conectar ferramentas externas ao Beehive.",
+      cards: [
+        ["Webhooks", "Enviar eventos de mensagens e canais para sistemas externos."],
+        ["ERP/CRM", "Sincronizar equipes, departamentos e avisos internos."],
+        ["Slack/Jira", "Criar pontes com ferramentas usadas pela empresa."],
+      ],
+    },
+    aparencia: {
+      titulo: "Personalização do workspace",
+      descricao:
+        "Defina como a identidade da empresa aparece para os colaboradores.",
+      cards: [
+        ["Tema", "Alternar entre visual claro, escuro e automático."],
+        ["Marca", "Customizar nome, ícone e cores principais do workspace."],
+        ["Densidade", "Ajustar espaçamento para equipes que usam o chat o dia todo."],
+      ],
+    },
+  };
+
+  const conteudo = conteudos[aba];
+
+  section.innerHTML = `
+    <div class="section-top">
+      <div>
+        <h3>${conteudo.titulo}</h3>
+        <p>${conteudo.descricao}</p>
+      </div>
+    </div>
+    <div class="insight-grid">
+      ${conteudo.cards
+        .map(
+          ([titulo, texto]) => `
+            <div class="insight-card">
+              <strong>${titulo}</strong>
+              <span>${texto}</span>
+            </div>
+          `
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 async function atualizarCargoUsuario(usuarioId, cargo) {

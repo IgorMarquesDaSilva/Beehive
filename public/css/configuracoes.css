@@ -614,3 +614,95 @@ body {
     width: min(520px, calc(100% - 28px));
   }
 }
+
+/* ATUALIZACAO DE PRODUTO - FILTROS, INSIGHTS E MODAIS */
+
+.admin-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 190px;
+  gap: 12px;
+  margin: 0 0 18px;
+}
+
+.admin-toolbar input,
+.admin-toolbar select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--cfg-border);
+  border-radius: 8px;
+  background: var(--cfg-surface);
+  color: var(--cfg-text);
+  padding: 0 12px;
+  outline: none;
+}
+
+.admin-toolbar input:focus,
+.admin-toolbar select:focus {
+  border-color: rgba(79, 109, 245, 0.55);
+  box-shadow: 0 0 0 4px rgba(79, 109, 245, 0.1);
+}
+
+.admin-self-note {
+  align-self: center;
+  color: var(--cfg-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.insight-card {
+  display: grid;
+  gap: 8px;
+  min-height: 132px;
+  padding: 18px;
+  border: 1px solid var(--cfg-border);
+  border-radius: 8px;
+  background: var(--cfg-surface);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+}
+
+.insight-card strong {
+  color: var(--cfg-text);
+  font-size: 16px;
+}
+
+.insight-card span {
+  color: var(--cfg-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.edit-private-check {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.edit-private-check input {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--cfg-brand);
+}
+
+@media (max-width: 820px) {
+  .admin-toolbar,
+  .insight-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .cargo-select {
+    flex: 1;
+    min-width: 160px;
+  }
+}

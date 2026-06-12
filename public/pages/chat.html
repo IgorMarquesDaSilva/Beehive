@@ -161,7 +161,7 @@
           <button type="button">Atualizar</button>
         </div>
 
-        <div class="summary-box">
+        <div class="summary-box" id="resumo-canal">
           <p>
             Selecione um canal para visualizar insights, mensagens importantes
             e atividades recentes da equipe.
@@ -175,8 +175,14 @@
         </div>
 
         <div class="search-box">
-          <input type="text" placeholder="Buscar no canal..." />
+          <input
+            type="text"
+            id="busca-canal"
+            placeholder="Buscar no canal..."
+          />
         </div>
+
+        <div id="resultados-busca" class="search-results"></div>
       </div>
 
       <div class="panel-section">
@@ -184,7 +190,7 @@
           <span>AtividadeS recenteS</span>
         </div>
 
-        <div class="activity-list">
+        <div class="activity-list" id="atividade-canal">
           <div class="activity-item">
             <span class="activity-dot green"></span>
             <div>
@@ -211,7 +217,7 @@
         </div>
       </div>
 
-      <div class="panel-section">
+      <div class="panel-section" id="proximos-recursos">
         <div class="panel-title">
           <span>Próximos recursos</span>
         </div>

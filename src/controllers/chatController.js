@@ -115,6 +115,58 @@ async function getMensagens(req, res) {
   }
 }
 
+async function buscarMensagens(req, res) {
+  const { canalId } = req.params;
+  const termo = String(req.query.q || "").trim();
+
+  if (termo.length < 2) {
+    return res.status(400).json({
+      erro: "Informe pelo menos 2 caracteres para buscar",
+    });
+  }
+
+  try {
+    const podeAcessar = await usuarioPodeAcessarCanal(req.usuario, canalId);
+
+    if (!podeAcessar) {
+      return res.status(403).json({
+        erro: "Você não tem acesso a este canal",
+      });
+    }
+
+    const [mensagens] = await db.query(
+      `
+      SELECT
+        m.id,
+        m.texto,
+        m.enviado_em,
+        m.usuario_id,
+        m.arquivo_url,
+        m.arquivo_nome,
+        m.arquivo_tipo,
+        u.nome
+      FROM mensagens m
+      JOIN usuarios u ON m.usuario_id = u.id
+      WHERE m.canal_id = ?
+        AND m.apagada_em IS NULL
+        AND (
+          m.texto LIKE ?
+          OR m.arquivo_nome LIKE ?
+          OR u.nome LIKE ?
+        )
+      ORDER BY m.enviado_em DESC, m.id DESC
+      LIMIT 25
+      `,
+      [canalId, `%${termo}%`, `%${termo}%`, `%${termo}%`]
+    );
+
+    res.json(mensagens);
+  } catch (err) {
+    console.error("Erro ao buscar mensagens:", err);
+    res.status(500).json({ erro: "Erro ao buscar mensagens" });
+  }
+}
+
 async function criarCanal(req, res) {
   const { nome, descricao, privado = false, membros = [] } = req.body;
 
@@ -586,6 +638,7 @@ async function removerMembroCanal(req, res) {
 module.exports = {
   getCanais,
   getMensagens,
+  buscarMensagens,
   criarCanal,
   atualizarCanal,
   apagarCanal,
