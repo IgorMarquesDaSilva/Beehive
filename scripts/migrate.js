@@ -13,7 +13,8 @@ function getDbConfig() {
 }
 
 function checksum(content) {
-  return crypto.createHash("sha256").update(content).digest("hex");
+  const normalizedContent = content.replace(/\r\n?/g, "\n");
+  return crypto.createHash("sha256").update(normalizedContent).digest("hex");
 }
 
 async function ensureMigrationsTable(connection) {
