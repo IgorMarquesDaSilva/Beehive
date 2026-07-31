@@ -43,7 +43,7 @@ function trocarAba(aba) {
     canais: "Canais",
     usuarios: "Usuários",
     permissoes: "Permissões",
-    voz: "Voz",
+    voz: "Reuniões",
     integracoes: "Integrações",
     aparencia: "Aparência",
   };
@@ -367,13 +367,13 @@ function renderizarAbaInformativa(aba) {
       ],
     },
     voz: {
-      titulo: "Voz e presença",
+      titulo: "Reuniões de voz",
       descricao:
-        "Acompanhe os recursos ativos para chamadas por canal e presença em tempo real.",
+        "Acompanhe os recursos disponíveis para reuniões independentes.",
       cards: [
-        ["Canais de voz", "Entrada e saída em salas por canal via WebRTC."],
-        ["Microfone", "Controle de mudo local disponível no painel de voz."],
-        ["Histórico", "Participantes ativos são registrados no banco."],
+        ["Convites", "O organizador escolhe os membros que poderão participar."],
+        ["Sala de reunião", "Áudio em tempo real com controle individual de microfone."],
+        ["Histórico", "Entradas, saídas e respostas aos convites são registradas."],
       ],
     },
     integracoes: {

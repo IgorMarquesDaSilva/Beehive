@@ -5,6 +5,7 @@ const { buscarUsuarioPorId } = require("../services/workspaceService");
 const {
   usuarioPodeAcessarCanal,
 } = require("../controllers/chatController");
+const registerMeetingSocket = require("./meetingSocket");
 
 function initSocket(io) {
   const usuariosOnline = new Map();
@@ -296,235 +297,15 @@ function initSocket(io) {
       }
     );
 
-    // ========= VOZ =========
-
-    socket.on("entrarVoz", async (canalId) => {
-      if (!canalId) return;
-
-      try {
-        const podeAcessar =
-          await usuarioPodeAcessarCanal(
-            usuario,
-            canalId
-          );
-
-        if (!podeAcessar) {
-          socket.emit("erroCanal", {
-            mensagem:
-              "Você não tem acesso ao canal de voz",
-          });
-
-          return;
-        }
-
-        await db.query(
-          "DELETE FROM salas_voz WHERE usuario_id = ?",
-          [usuario.id]
-        );
-
-        await db.query(
-          `
-          UPDATE voz_participantes
-          SET saiu_em = NOW(),
-              ativo = 0
-          WHERE usuario_id = ?
-            AND ativo = 1
-          `,
-          [usuario.id]
-        );
-
-        await db.query(
-          `
-          INSERT IGNORE INTO salas_voz
-          (canal_id, usuario_id, membro_id)
-          VALUES (?, ?, ?)
-          `,
-          [canalId, usuario.id, usuario.membro_id || null]
-        );
-
-        await db.query(
-          `
-          INSERT INTO voz_participantes
-            (canal_id, membro_id, usuario_id, entrou_em, ativo)
-          VALUES (?, ?, ?, NOW(), 1)
-          `,
-          [canalId, usuario.membro_id || null, usuario.id]
-        );
-
-        socket.rooms.forEach((room) => {
-          if (
-            room !== socket.id &&
-            room.startsWith("voz_")
-          ) {
-            socket.leave(room);
-          }
-        });
-
-        socket.join(`voz_${canalId}`);
-
-        const dadosOnline =
-          usuariosOnline.get(socket.id);
-
-        if (dadosOnline) {
-          dadosOnline.emVoz = true;
-
-          usuariosOnline.set(
-            socket.id,
-            dadosOnline
-          );
-        }
-
-        emitirUsuariosOnline();
-
-        const membros = [];
-
-        const socketsNaSala =
-          await io
-            .in(`voz_${canalId}`)
-            .fetchSockets();
-
-        socketsNaSala.forEach((s) => {
-          const dadosUsuario =
-            usuariosOnline.get(s.id);
-
-          if (
-            dadosUsuario &&
-            s.id !== socket.id
-          ) {
-            membros.push({
-              socketId: s.id,
-              usuarioId: dadosUsuario.id,
-              nome: dadosUsuario.nome,
-            });
-          }
-        });
-
-        socket.emit("membrosVoz", membros);
-
-        socket
-          .to(`voz_${canalId}`)
-          .emit("usuarioEntrouVoz", {
-            socketId: socket.id,
-            usuarioId: usuario.id,
-            nome: usuario.nome,
-          });
-
-        io.to(`canal_${canalId}`).emit(
-          "atualizarVoz",
-          {
-            canalId: Number(canalId),
-          }
-        );
-      } catch (err) {
-        console.error(
-          "Erro ao entrar na voz:",
-          err
-        );
-      }
+    registerMeetingSocket({
+      io,
+      socket,
+      usuario,
+      usuariosOnline,
+      emitirUsuariosOnline,
     });
 
-    socket.on("sairVoz", async (canalId) => {
-      if (!canalId) return;
-
-      try {
-        await db.query(
-          `
-          DELETE FROM salas_voz
-          WHERE canal_id = ?
-          AND usuario_id = ?
-          `,
-          [canalId, usuario.id]
-        );
-
-        await db.query(
-          `
-          UPDATE voz_participantes
-          SET saiu_em = NOW(),
-              ativo = 0
-          WHERE canal_id = ?
-            AND usuario_id = ?
-            AND ativo = 1
-          `,
-          [canalId, usuario.id]
-        );
-
-        socket.leave(`voz_${canalId}`);
-
-        const dadosOnline =
-          usuariosOnline.get(socket.id);
-
-        if (dadosOnline) {
-          dadosOnline.emVoz = false;
-
-          usuariosOnline.set(
-            socket.id,
-            dadosOnline
-          );
-        }
-
-        emitirUsuariosOnline();
-
-        io.to(`voz_${canalId}`).emit(
-          "usuarioSaiuVoz",
-          {
-            socketId: socket.id,
-            usuarioId: usuario.id,
-            nome: usuario.nome,
-          }
-        );
-
-        io.to(`canal_${canalId}`).emit(
-          "atualizarVoz",
-          {
-            canalId: Number(canalId),
-          }
-        );
-      } catch (err) {
-        console.error(
-          "Erro ao sair da voz:",
-          err
-        );
-      }
-    });
-
-    // ========= WEBRTC =========
-
-    socket.on("offer", ({ offer, para }) => {
-      if (!offer || !para) return;
-
-      io.to(para).emit("offer", {
-        offer,
-        de: socket.id,
-        nome: usuario.nome,
-      });
-    });
-
-    socket.on(
-      "answer",
-      ({ answer, para }) => {
-        if (!answer || !para) return;
-
-        io.to(para).emit("answer", {
-          answer,
-          de: socket.id,
-        });
-      }
-    );
-
-    socket.on(
-      "iceCandidate",
-      ({ candidate, para }) => {
-        if (!candidate || !para) return;
-
-        io.to(para).emit(
-          "iceCandidate",
-          {
-            candidate,
-            de: socket.id,
-          }
-        );
-      }
-    );
+    // Reuniões e WebRTC são registrados em meetingSocket.js.
 
     // ========= DESCONECTAR =========
 
@@ -533,48 +314,19 @@ function initSocket(io) {
         `Usuário desconectado: ${usuario.nome}`
       );
 
-      usuariosOnline.delete(socket.id);
+      try {
+        await socket.data.sairDaReuniaoAtual?.();
+      } catch (err) {
+        console.error("Erro ao limpar reunião:", err);
+      }
 
       await atualizarStatusBanco(
         usuario.id,
         "offline"
       );
 
+      usuariosOnline.delete(socket.id);
       emitirUsuariosOnline();
-
-      try {
-        await db.query(
-          `
-          DELETE FROM salas_voz
-          WHERE usuario_id = ?
-          `,
-          [usuario.id]
-        );
-
-        await db.query(
-          `
-          UPDATE voz_participantes
-          SET saiu_em = NOW(),
-              ativo = 0
-          WHERE usuario_id = ?
-            AND ativo = 1
-          `,
-          [usuario.id]
-        );
-
-        io.emit("usuarioSaiuVoz", {
-          socketId: socket.id,
-          usuarioId: usuario.id,
-          nome: usuario.nome,
-        });
-
-        io.emit("atualizarVoz", {});
-      } catch (err) {
-        console.error(
-          "Erro ao limpar voz:",
-          err
-        );
-      }
     });
   });
 }

@@ -35,6 +35,20 @@
         <div id="lista-canais" class="channel-list"></div>
       </div>
 
+      <div class="sidebar-section meetings-section">
+        <div class="section-title">
+          <span>Reuniões</span>
+          <button
+            type="button"
+            onclick="abrirModalCriarReuniao()"
+            title="Criar reunião"
+          >
+            +
+          </button>
+        </div>
+        <div id="lista-reunioes" class="meeting-list"></div>
+      </div>
+
       <div class="sidebar-section online-section">
         <div class="section-title">
           <span>Membros</span>
@@ -55,7 +69,6 @@
         </div>
 
         <div id="lista-online" class="online-list"></div>
-        <div id="lista-voz" class="voice-list"></div>
       </div>
 
       <div class="sidebar-footer">
@@ -182,33 +195,151 @@
     <p class="erro" id="canal-erro"></p>
   </div>
 
-  <div class="modal-overlay" id="modal-chamada-overlay"></div>
+  <div
+    class="modal-overlay"
+    id="modal-reuniao-overlay"
+    onclick="fecharModalCriarReuniao()"
+  ></div>
 
-  <div class="modal" id="modal-chamada" style="display:none">
-    <h3>Chamada recebida</h3>
-    <p id="chamada-nome"></p>
+  <div class="modal meeting-create-modal" id="modal-criar-reuniao">
+    <h3>Criar reunião de voz</h3>
+    <p class="modal-description">
+      Defina um assunto e convide os membros que devem participar.
+    </p>
+
+    <label for="reuniao-titulo">Título da reunião</label>
+    <input
+      type="text"
+      id="reuniao-titulo"
+      maxlength="120"
+      placeholder="Ex.: Alinhamento do projeto"
+    />
+
+    <div class="meeting-invite-heading">
+      <strong>Convidar membros</strong>
+      <small>Escolha até 8 pessoas. Elas poderão aceitar ou recusar.</small>
+    </div>
+    <div
+      id="lista-convidados-reuniao"
+      class="meeting-member-list"
+    ></div>
+
     <div class="modal-botoes">
-      <button class="btn-cancelar" type="button" onclick="recusarChamada()">
+      <button
+        class="btn-cancelar"
+        type="button"
+        onclick="fecharModalCriarReuniao()"
+      >
+        Cancelar
+      </button>
+      <button
+        class="btn-criar"
+        id="btn-criar-reuniao"
+        type="button"
+        onclick="criarReuniao()"
+      >
+        Criar e entrar
+      </button>
+    </div>
+    <p class="erro" id="reuniao-erro"></p>
+  </div>
+
+  <div class="modal-overlay" id="modal-convite-overlay"></div>
+
+  <div class="modal meeting-invitation-modal" id="modal-convite-reuniao">
+    <span class="meeting-invitation-label">Convite para reunião</span>
+    <h3 id="convite-reuniao-titulo">Reunião de voz</h3>
+    <p id="convite-reuniao-texto"></p>
+    <div class="modal-botoes">
+      <button
+        class="btn-cancelar"
+        type="button"
+        onclick="responderConviteReuniao('recusado')"
+      >
         Recusar
       </button>
-      <button class="btn-criar" type="button" onclick="aceitarChamada()">
-        Aceitar
+      <button
+        class="btn-criar"
+        type="button"
+        onclick="responderConviteReuniao('aceito')"
+      >
+        Aceitar e entrar
       </button>
     </div>
   </div>
 
-  <div class="voz-painel" id="voz-painel" style="display:none">
-    <div class="voz-header">
-      <span id="voz-titulo">Canal de voz</span>
-      <button class="btn-sair-voz" type="button" onclick="sairVoz()">Sair</button>
-    </div>
-    <div class="voz-membros" id="voz-membros"></div>
-    <div class="voz-controles">
-      <button class="btn-mute" id="btn-mute" type="button" onclick="toggleMute()">
-        Microfone ativo
+  <section
+    class="meeting-room"
+    id="sala-reuniao"
+    style="display:none"
+    aria-label="Sala de reunião"
+  >
+    <header class="meeting-room-header">
+      <div>
+        <span class="meeting-live-indicator">Em andamento</span>
+        <h2 id="sala-reuniao-titulo">Reunião</h2>
+      </div>
+      <div class="meeting-room-meta">
+        <span id="tempo-reuniao">00:00:00</span>
+        <button
+          type="button"
+          class="meeting-close-panel"
+          onclick="togglePainelParticipantes()"
+        >
+          Participantes
+          <span id="contador-participantes-reuniao">0</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="meeting-room-content">
+      <div
+        class="meeting-participant-grid"
+        id="grade-participantes-reuniao"
+      ></div>
+
+      <aside
+        class="meeting-attendees-panel"
+        id="painel-participantes-reuniao"
+      >
+        <div class="meeting-attendees-header">
+          <div>
+            <span>Reunião</span>
+            <h3>Participantes e convidados</h3>
+          </div>
+          <button
+            type="button"
+            onclick="togglePainelParticipantes()"
+            title="Fechar painel"
+          >
+            Fechar
+          </button>
+        </div>
+        <div
+          class="meeting-attendees-list"
+          id="participantes-reuniao-lista"
+        ></div>
+      </aside>
+    </main>
+
+    <footer class="meeting-room-controls">
+      <button
+        type="button"
+        id="btn-microfone-reuniao"
+        onclick="toggleMicrofoneReuniao()"
+      >
+        Desativar microfone
       </button>
-    </div>
-  </div>
+      <button
+        type="button"
+        class="meeting-end-button"
+        id="btn-encerrar-reuniao"
+        onclick="encerrarOuSairReuniao()"
+      >
+        Sair da reunião
+      </button>
+    </footer>
+  </section>
 
   <div id="toast-container"></div>
 
@@ -221,6 +352,6 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/chat.js"></script>
-  <script src="/js/voz.js"></script>
+  <script src="/js/reunioes.js"></script>
 </body>
 </html>

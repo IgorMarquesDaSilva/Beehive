@@ -173,6 +173,11 @@ async function iniciar() {
     });
 
     window.socket = socket;
+    window.dispatchEvent(
+      new CustomEvent("beehive:socket-ready", {
+        detail: { socket },
+      })
+    );
 
     socket.on("connect", () => {
       console.log("Socket conectado:", socket.id);
@@ -278,106 +283,6 @@ async function iniciar() {
       document.getElementById("digitando-texto").innerText = "";
     });
 
-    socket.on("membrosVoz", async (membros) => {
-      if (!Array.isArray(membros)) return;
-
-      for (const m of membros) {
-        if (!m.socketId) continue;
-
-        adicionarMembroVoz(m.nome, m.socketId);
-        await criarPeer(m.socketId, true);
-      }
-
-      atualizarBotoesVoz();
-    });
-
-    socket.on("usuarioEntrouVoz", async ({ socketId, nome }) => {
-      if (!socketId) return;
-
-      adicionarMembroVoz(nome, socketId);
-
-      if (typeof canalVozAtual !== "undefined" && canalVozAtual) {
-        await criarPeer(socketId, false);
-      }
-
-      atualizarBotoesVoz();
-    });
-
-    socket.on("usuarioSaiuVoz", ({ socketId }) => {
-      if (!socketId) return;
-
-      removerMembroVoz(socketId);
-      removerAudio(socketId);
-      atualizarBotoesVoz();
-    });
-
-    socket.on("offer", async ({ offer, de }) => {
-      if (!localStream) return;
-
-      const peer = await criarPeer(de, false);
-      await peer.setRemoteDescription(new RTCSessionDescription(offer));
-
-      const answer = await peer.createAnswer();
-      await peer.setLocalDescription(answer);
-
-      socket.emit("answer", {
-        answer,
-        para: de,
-      });
-    });
-
-    socket.on("answer", async ({ answer, de }) => {
-      const peer = peers[de];
-
-      if (peer) {
-        await peer.setRemoteDescription(new RTCSessionDescription(answer));
-      }
-    });
-
-    socket.on("iceCandidate", async ({ candidate, de }) => {
-      const peer = peers[de];
-
-      if (peer && candidate) {
-        await peer.addIceCandidate(new RTCIceCandidate(candidate));
-      }
-    });
-
-    socket.on("atualizarVoz", async ({ canalId }) => {
-      if (canalId) {
-        await carregarMembrosVoz(canalId);
-      }
-    });
-
-    socket.on("chamadaRecebida", ({ de, nome }) => {
-      chamadaDeSocketId = de;
-      document.getElementById("chamada-nome").innerText =
-        `${nome} está te chamando...`;
-      document.getElementById("modal-chamada").style.display = "block";
-      document.getElementById("modal-chamada-overlay").style.display = "block";
-    });
-
-    socket.on("chamadaAceita", async ({ de }) => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
-        localStream = stream;
-        await criarPeer(de, true);
-      } catch (err) {
-        alert("Não foi possível acessar o microfone.");
-        console.error(err);
-      }
-    });
-
-    socket.on("chamadaRecusada", () => {
-      alert("Chamada recusada.");
-      chamadaParaSocketId = null;
-    });
-
-    socket.on("chamadaEncerrada", () => {
-      alert("Chamada encerrada.");
-      encerrarConexoesVoz();
-    });
   } catch (err) {
     console.error("Erro ao iniciar chat:", err);
     localStorage.removeItem("usuario");
@@ -444,19 +349,6 @@ async function carregarCanais() {
 
       const direita = document.createElement("div");
       direita.classList.add("canal-direita");
-
-      const btnVoz = document.createElement("button");
-      btnVoz.classList.add("btn-entrar-voz");
-      btnVoz.setAttribute("data-canal-id", canal.id);
-      btnVoz.innerText = "Voz";
-      btnVoz.title = "Entrar no canal de voz";
-
-      btnVoz.onclick = (e) => {
-        e.stopPropagation();
-        entrarVoz(canal.id, canal.nome);
-      };
-
-      direita.appendChild(btnVoz);
 
       if (podeExcluir && canal.nome !== "geral") {
         const btnExcluir = document.createElement("button");
@@ -1110,18 +1002,6 @@ async function criarCanal() {
   } catch (err) {
     console.error(err);
     document.getElementById("canal-erro").innerText = "Erro ao criar canal";
-  }
-}
-
-function encerrarConexoesVoz() {
-  if (typeof localStream !== "undefined" && localStream) {
-    localStream.getTracks().forEach((t) => t.stop());
-    localStream = null;
-  }
-
-  if (typeof peers !== "undefined" && peers) {
-    Object.values(peers).forEach((p) => p.close());
-    peers = {};
   }
 }
 

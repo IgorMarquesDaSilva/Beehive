@@ -90,6 +90,7 @@ O passo a passo completo para Aiven esta em `docs/guia-aiven.md`.
 | `002_workspace_roles.sql` | Adiciona `workspaces`, `papeis`, `workspace_membros` e colunas de transição. |
 | `003_message_attachments_audit.sql` | Separa anexos em tabela própria e cria auditoria. |
 | `004_voice_participants.sql` | Prepara histórico de participantes de voz sem quebrar `salas_voz`. |
+| `005_independent_meetings.sql` | Cria reuniões independentes, convites e histórico de participantes. |
 
 ## Migração Em Etapas
 

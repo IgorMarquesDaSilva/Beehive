@@ -492,37 +492,6 @@ async function atualizarCargoUsuario(req, res) {
   }
 }
 
-async function getMembrosVoz(req, res) {
-  const { canalId } = req.params;
-
-  try {
-    const podeAcessar = await usuarioPodeAcessarCanal(req.usuario, canalId);
-
-    if (!podeAcessar) {
-      return res.status(403).json({
-        erro: "Você não tem acesso a este canal de voz",
-      });
-    }
-
-    const [membros] = await db.query(
-      `
-      SELECT u.id, u.nome
-      FROM salas_voz sv
-      JOIN usuarios u ON sv.usuario_id = u.id
-      WHERE sv.canal_id = ?
-      `,
-      [canalId]
-    );
-
-    res.json(membros);
-  } catch (err) {
-    console.error("Erro ao buscar membros da voz:", err);
-    res.status(500).json({
-      erro: "Erro ao buscar membros da voz",
-    });
-  }
-}
-
 async function getMembrosCanal(req, res) {
   const { canalId } = req.params;
 
@@ -645,7 +614,6 @@ module.exports = {
   apagarMensagem,
   getUsuarios,
   atualizarCargoUsuario,
-  getMembrosVoz,
   getMembrosCanal,
   adicionarMembroCanal,
   removerMembroCanal,

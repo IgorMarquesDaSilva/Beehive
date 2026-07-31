@@ -6,6 +6,7 @@ const path = require("path");
 
 const authRoutes = require("./src/routes/authRoutes");
 const chatRoutes = require("./src/routes/chatRoutes");
+const meetingRoutes = require("./src/routes/meetingRoutes");
 const initSocket = require("./src/socket/chatSocket");
 const db = require("./src/config/db");
 
@@ -19,6 +20,8 @@ const io = new Server(server, {
   },
 });
 
+app.set("io", io);
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -31,6 +34,7 @@ app.use(
 
 app.use("/auth", authRoutes);
 app.use("/chat", chatRoutes);
+app.use("/meetings", meetingRoutes);
 
 app.get("/", (req, res) => {
   res.redirect("/pages/login.html");

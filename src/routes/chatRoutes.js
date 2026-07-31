@@ -15,7 +15,6 @@ const {
   apagarMensagem,
   getUsuarios,
   atualizarCargoUsuario,
-  getMembrosVoz,
   apagarCanal,
   getMembrosCanal,
   adicionarMembroCanal,
@@ -132,12 +131,6 @@ router.put(
   authMiddleware,
   adminMiddleware,
   atualizarCargoUsuario
-);
-
-router.get(
-  "/voz/:canalId",
-  authMiddleware,
-  getMembrosVoz
 );
 
 router.delete(
