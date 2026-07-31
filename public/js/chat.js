@@ -424,7 +424,12 @@ async function carregarCanais() {
 
       const nome = document.createElement("span");
       nome.classList.add("canal-nome");
-      nome.innerText = canal.privado ? `🔒 ${canal.nome}` : canal.nome;
+      nome.innerText = canal.nome;
+
+      if (canal.privado) {
+        div.classList.add("canal-privado");
+        nome.title = "Canal privado";
+      }
 
       const badge = document.createElement("span");
       badge.classList.add("badge");
@@ -443,7 +448,8 @@ async function carregarCanais() {
       const btnVoz = document.createElement("button");
       btnVoz.classList.add("btn-entrar-voz");
       btnVoz.setAttribute("data-canal-id", canal.id);
-      btnVoz.innerText = "🎙️";
+      btnVoz.innerText = "Voz";
+      btnVoz.title = "Entrar no canal de voz";
 
       btnVoz.onclick = (e) => {
         e.stopPropagation();
@@ -455,7 +461,7 @@ async function carregarCanais() {
       if (podeExcluir && canal.nome !== "geral") {
         const btnExcluir = document.createElement("button");
         btnExcluir.classList.add("btn-excluir-canal");
-        btnExcluir.innerText = "🗑️";
+        btnExcluir.innerText = "Excluir";
         btnExcluir.title = "Excluir canal";
 
         btnExcluir.onclick = async (e) => {
@@ -1200,7 +1206,7 @@ function mostrarPreviewArquivo(arquivo) {
   preview.id = "preview-arquivo";
 
   const nome = document.createElement("span");
-  nome.innerText = `📎 ${arquivo.nomeOriginal}`;
+  nome.innerText = arquivo.nomeOriginal;
 
   const remover = document.createElement("button");
   remover.innerText = "✕";
@@ -1279,12 +1285,12 @@ function criarAnexoMensagem(url, nome, tipo) {
 }
 
 function escolherIconeArquivo(tipo) {
-  if (!tipo) return "📎";
-  if (tipo.includes("pdf")) return "📄";
-  if (tipo.includes("word")) return "📝";
-  if (tipo.includes("excel") || tipo.includes("spreadsheet")) return "📊";
-  if (tipo.includes("text")) return "📃";
-  return "📎";
+  if (!tipo) return "ARQ";
+  if (tipo.includes("pdf")) return "PDF";
+  if (tipo.includes("word")) return "DOC";
+  if (tipo.includes("excel") || tipo.includes("spreadsheet")) return "XLS";
+  if (tipo.includes("text")) return "TXT";
+  return "ARQ";
 }
 
 async function inicializarChat() {

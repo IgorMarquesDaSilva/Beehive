@@ -66,8 +66,8 @@ async function entrarVoz(canalId, nomeCanal) {
   const membros = document.getElementById("voz-membros");
 
   if (painel) painel.style.display = "flex";
-  if (titulo) titulo.innerText = `🎙️ # ${nomeCanal}`;
-  if (btnMute) btnMute.innerText = "🎙️ Ativo";
+  if (titulo) titulo.innerText = `Canal de voz - ${nomeCanal}`;
+  if (btnMute) btnMute.innerText = "Microfone ativo";
   if (membros) membros.innerHTML = "";
 
   adicionarMembroVoz(usuario.nome, socket.id, true);
@@ -123,7 +123,7 @@ function toggleMute() {
   const btnMute = document.getElementById("btn-mute");
 
   if (btnMute) {
-    btnMute.innerText = mutado ? "🔇 Mudo" : "🎙️ Ativo";
+    btnMute.innerText = mutado ? "Microfone mudo" : "Microfone ativo";
   }
 }
 
@@ -260,11 +260,11 @@ function atualizarBotoesVoz() {
     const canalId = btn.getAttribute("data-canal-id");
 
     if (Number(canalId) === Number(canalVozAtual)) {
-      btn.innerText = "✅ Conectado";
-      btn.style.color = "#2ecc71";
+      btn.innerText = "Conectado";
+      btn.dataset.conectado = "true";
     } else {
-      btn.innerText = "🎙️ Entrar";
-      btn.style.color = "#f5a623";
+      btn.innerText = "Voz";
+      btn.dataset.conectado = "false";
     }
   });
 }
@@ -291,7 +291,7 @@ async function carregarMembrosVoz(canalId) {
       div.classList.add("canal-item", "voz-item");
 
       const span = document.createElement("span");
-      span.innerText = `🔊 ${m.nome}`;
+      span.innerText = `Em voz: ${m.nome}`;
 
       div.appendChild(span);
       lista.appendChild(div);

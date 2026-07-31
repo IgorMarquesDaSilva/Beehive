@@ -4,112 +4,100 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Beehive - Chat</title>
-
-  <link rel="stylesheet" href="/css/chat.css" /> <!-- esse é o link do css -->
+  <link rel="stylesheet" href="/css/chat.css" />
 </head>
 <body>
-
   <div class="app-shell">
-    <div class="workspace-bar">
-
-      <div class="workspace-icon active">
-        🐝
-      </div>
-
-      <div class="workspace-divider"></div>
-
-      <div class="workspace-icon">
-        💬
-      </div>
-
-      <div class="workspace-icon">
-        📁
-      </div>
-
-      <div class="workspace-icon">
-        📞
-      </div>
-
-      <div
-        class="workspace-icon"
-        onclick="window.location.href='/pages/configuracoes.html'"
-        title="Configurações"
-      >
-        ⚙️
-      </div>
-
-    </div>
-
     <aside class="sidebar">
       <div class="workspace">
-        <div>
-          <h1>Workspace Engenharia</h1>
-          <p>Comunicação interna</p>
+        <div class="brand-mark" aria-hidden="true">B</div>
+        <div class="workspace-copy">
+          <h1>Beehive</h1>
+          <p>Workspace Engenharia</p>
         </div>
+        <button
+          class="workspace-settings"
+          type="button"
+          onclick="window.location.href='/pages/configuracoes.html'"
+          title="Configurações"
+        >
+          Config.
+        </button>
       </div>
 
-      <div class="sidebar-section">
+      <div class="sidebar-section channels-section">
         <div class="section-title">
           <span>Canais</span>
-          <button onclick="abrirModalCanal()" title="Novo canal">+</button>
+          <button type="button" onclick="abrirModalCanal()" title="Criar canal">
+            +
+          </button>
         </div>
-
         <div id="lista-canais" class="channel-list"></div>
       </div>
 
       <div class="sidebar-section online-section">
         <div class="section-title">
-          <span>Membros online</span>
+          <span>Membros</span>
         </div>
 
         <div class="online-user">
           <div class="avatar azul">EU</div>
-
           <div class="online-user-info">
             <strong id="nome-usuario">Carregando...</strong>
-
-            <select id="status-select" onchange="alterarStatus()">
-              <option value="online">🟢 Online</option>
-              <option value="ausente">🌙 Ausente</option>
-              <option value="ocupado">⛔ Ocupado</option>
-              <option value="offline">⚫ Invisível</option>
+            <select id="status-select" onchange="alterarStatus()" aria-label="Status">
+              <option value="online">Online</option>
+              <option value="ausente">Ausente</option>
+              <option value="ocupado">Ocupado</option>
+              <option value="offline">Invisível</option>
             </select>
           </div>
-
           <span class="online-dot status-online" id="meu-status-dot"></span>
         </div>
 
         <div id="lista-online" class="online-list"></div>
-
         <div id="lista-voz" class="voice-list"></div>
       </div>
 
       <div class="sidebar-footer">
         <a href="/pages/perfil.html">Meu perfil</a>
-        <button onclick="logout()">Sair</button>
+        <button type="button" onclick="logout()">Sair</button>
       </div>
     </aside>
 
     <main class="chat-main">
       <header class="chat-header">
-        <div>
+        <div class="channel-heading">
           <h2 id="canal-ativo">Selecione um canal</h2>
-          <p>Mensagens, arquivos e comunicação da equipe</p>
+          <p>Conversa da equipe</p>
         </div>
 
         <div class="header-actions">
-          <button title="Notificações">🔔</button>
-          <button title="Fixados">📌</button>
+          <div class="channel-search">
+            <input
+              type="search"
+              id="busca-canal"
+              placeholder="Buscar neste canal"
+              autocomplete="off"
+              aria-label="Buscar mensagens no canal"
+            />
+            <div id="resultados-busca" class="search-results"></div>
+          </div>
           <button
-            title="Configurações"
+            class="header-settings"
+            type="button"
             onclick="window.location.href='/pages/configuracoes.html'"
           >
-            ⚙️
+            Configurações
           </button>
         </div>
       </header>
 
-      <section class="chat-mensagens" id="chat-mensagens"></section>
+      <section class="chat-mensagens" id="chat-mensagens">
+        <div class="chat-empty-state" data-tipo="empty">
+          <strong>Selecione um canal</strong>
+          <span>Escolha um canal na barra lateral para ver a conversa.</span>
+        </div>
+      </section>
 
       <div class="digitando-container">
         <span id="digitando-texto"></span>
@@ -117,15 +105,13 @@
 
       <footer class="chat-input-area">
         <div class="format-toolbar">
-          <button type="button">B</button>
-          <button type="button"><i>I</i></button>
-          <button type="button">U</button>
-          <button type="button">🔗</button>
-          <button type="button" onclick="abrirSeletorArquivo()">📎</button>
+          <button type="button" onclick="abrirSeletorArquivo()">
+            Anexar arquivo
+          </button>
           <input
             type="file"
             id="input-arquivo"
-            style="display:none"
+            hidden
             onchange="uploadArquivo(event)"
           />
         </div>
@@ -136,115 +122,26 @@
             <input
               type="text"
               id="msg-input"
-              placeholder="Mensagem para o canal... use @ para mencionar"
+              placeholder="Escreva uma mensagem"
+              autocomplete="off"
             />
           </div>
-
-          <button class="send-btn" onclick="enviar()">Enviar</button>
+          <button class="send-btn" type="button" onclick="enviar()">Enviar</button>
         </div>
       </footer>
     </main>
-
-    <aside class="right-panel">
-
-      <div class="panel-card ai-card">
-        <div class="panel-icon">✨</div>
-        <div>
-          <h3>Beehive IA</h3>
-          <p>Resumo inteligente do canal atual</p>
-        </div>
-      </div>
-
-      <div class="panel-section">
-        <div class="panel-title">
-          <span>Resumo do canal</span>
-          <button type="button">Atualizar</button>
-        </div>
-
-        <div class="summary-box" id="resumo-canal">
-          <p>
-            Selecione um canal para visualizar insights, mensagens importantes
-            e atividades recentes da equipe.
-          </p>
-        </div>
-      </div>
-
-      <div class="panel-section">
-        <div class="panel-title">
-          <span>Busca rápida</span>
-        </div>
-
-        <div class="search-box">
-          <input
-            type="text"
-            id="busca-canal"
-            placeholder="Buscar no canal..."
-          />
-        </div>
-
-        <div id="resultados-busca" class="search-results"></div>
-      </div>
-
-      <div class="panel-section">
-        <div class="panel-title">
-          <span>AtividadeS recenteS</span>
-        </div>
-
-        <div class="activity-list" id="atividade-canal">
-          <div class="activity-item">
-            <span class="activity-dot green"></span>
-            <div>
-              <strong>Chat em tempo real</strong>
-              <small>Funcionando no Render</small>
-            </div>
-          </div>
-
-          <div class="activity-item">
-            <span class="activity-dot blue"></span>
-            <div>
-              <strong>Voz por canal</strong>
-              <small>WebRTC conectado</small>
-            </div>
-          </div>
-
-          <div class="activity-item">
-            <span class="activity-dot yellow"></span>
-            <div>
-              <strong>Presença online</strong>
-              <small>Status em tempo real ativo</small>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel-section" id="proximos-recursos">
-        <div class="panel-title">
-          <span>Próximos recursos</span>
-        </div>
-
-        <div class="tag-list">
-          <span>Upload</span>
-          <span>Arquivos</span>
-          <span>DM</span>
-          <span>Permissões</span>
-          <span>IA</span>
-        </div>
-      </div>
-
-    </aside>
   </div>
 
   <div class="modal-overlay" id="modal-overlay" onclick="fecharModalCanal()"></div>
 
   <div class="modal" id="modal-canal">
-    <h3>✨ Criar canal</h3>
+    <h3>Criar canal</h3>
+    <p class="modal-description">Organize uma nova conversa para a equipe.</p>
 
-    <input
-      type="text"
-      id="canal-nome"
-      placeholder="Nome do canal"
-    />
+    <label for="canal-nome">Nome</label>
+    <input type="text" id="canal-nome" placeholder="Ex.: planejamento" />
 
+    <label for="canal-descricao">Descrição</label>
     <input
       type="text"
       id="canal-descricao"
@@ -258,14 +155,9 @@
           id="canal-privado"
           onchange="toggleCanalPrivado()"
         />
-
-        <span class="checkmark"></span>
-
         <div>
           <strong>Canal privado</strong>
-          <small>
-            Apenas membros convidados poderão acessar
-          </small>
+          <small>Apenas membros convidados poderão acessar.</small>
         </div>
       </label>
     </div>
@@ -275,54 +167,49 @@
       class="selecionar-membros"
       style="display:none"
     >
-      <h4>👥 Selecionar membros</h4>
-
+      <h4>Selecionar membros</h4>
       <div id="lista-membros-canal" class="lista-membros-canal"></div>
     </div>
 
     <div class="modal-botoes">
-      <button
-        class="btn-cancelar"
-        onclick="fecharModalCanal()"
-      >
+      <button class="btn-cancelar" type="button" onclick="fecharModalCanal()">
         Cancelar
       </button>
-
-      <button
-        class="btn-criar"
-        onclick="criarCanal()"
-      >
+      <button class="btn-criar" type="button" onclick="criarCanal()">
         Criar canal
       </button>
     </div>
-
     <p class="erro" id="canal-erro"></p>
   </div>
 
   <div class="modal-overlay" id="modal-chamada-overlay"></div>
 
   <div class="modal" id="modal-chamada" style="display:none">
-    <h3>📞 Chamada recebida</h3>
+    <h3>Chamada recebida</h3>
     <p id="chamada-nome"></p>
-
     <div class="modal-botoes">
-      <button class="btn-cancelar" onclick="recusarChamada()">Recusar</button>
-      <button class="btn-criar" onclick="aceitarChamada()">Aceitar</button>
+      <button class="btn-cancelar" type="button" onclick="recusarChamada()">
+        Recusar
+      </button>
+      <button class="btn-criar" type="button" onclick="aceitarChamada()">
+        Aceitar
+      </button>
     </div>
   </div>
 
   <div class="voz-painel" id="voz-painel" style="display:none">
     <div class="voz-header">
-      <span id="voz-titulo">🎙️ Canal de voz</span>
-      <button class="btn-sair-voz" onclick="sairVoz()">Sair</button>
+      <span id="voz-titulo">Canal de voz</span>
+      <button class="btn-sair-voz" type="button" onclick="sairVoz()">Sair</button>
     </div>
-
     <div class="voz-membros" id="voz-membros"></div>
-
     <div class="voz-controles">
-      <button class="btn-mute" id="btn-mute" onclick="toggleMute()">🎙️ Ativo</button>
+      <button class="btn-mute" id="btn-mute" type="button" onclick="toggleMute()">
+        Microfone ativo
+      </button>
     </div>
   </div>
+
   <div id="toast-container"></div>
 
   <audio id="notification-sound">
@@ -331,6 +218,7 @@
       type="audio/mpeg"
     />
   </audio>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/chat.js"></script>
   <script src="/js/voz.js"></script>

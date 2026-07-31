@@ -159,7 +159,7 @@ function renderizarCanaisConfig() {
     info.classList.add("admin-card-info");
 
     const titulo = document.createElement("h4");
-    titulo.innerText = `${canal.privado ? "🔒" : "#"} ${canal.nome}`;
+    titulo.innerText = `# ${canal.nome}`;
 
     const descricao = document.createElement("p");
     descricao.innerText = canal.descricao || "Sem descrição";
@@ -230,7 +230,6 @@ function renderizarUsuariosConfig() {
         type="search"
         id="filtro-usuarios-config"
         placeholder="Buscar usuário por nome ou email..."
-        value="${filtroUsuarios}"
       />
       <select id="filtro-cargo-usuario">
         <option value="todos">Todos os cargos</option>
@@ -247,6 +246,7 @@ function renderizarUsuariosConfig() {
   const filtroCargo = document.getElementById("filtro-cargo-usuario");
 
   if (filtroInput) {
+    filtroInput.value = filtroUsuarios;
     filtroInput.addEventListener("input", (event) => {
       filtroUsuarios = event.target.value.toLowerCase();
       renderizarUsuariosConfig();

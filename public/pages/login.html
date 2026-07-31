@@ -1,44 +1,87 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Beehive 🐝</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beehive - Entrar</title>
+  <link rel="stylesheet" href="/css/style.css" />
 </head>
-<body>
+<body class="auth-page">
+  <main class="login-container">
+    <section class="login-box" aria-labelledby="auth-title">
+      <div class="auth-brand">
+        <span class="brand-mark" aria-hidden="true">B</span>
+        <span>Beehive</span>
+      </div>
 
-  <div class="login-container">
-    <div class="login-box">
+      <div class="auth-heading">
+        <h1 id="auth-title">Acesse seu workspace</h1>
+        <p>Comunicação interna da sua equipe.</p>
+      </div>
 
-      <h1>🐝 Beehive</h1>
-      <p>Plataforma de comunicação empresarial</p>
+      <form id="tela-login" onsubmit="event.preventDefault(); login()">
+        <label for="login-email">E-mail</label>
+        <input
+          type="email"
+          id="login-email"
+          placeholder="nome@empresa.com"
+          autocomplete="email"
+        />
 
-      <!-- FORMULÁRIO DE LOGIN -->
-      <div id="tela-login">
-        <input type="email" id="login-email" placeholder="Email" />
-        <input type="password" id="login-senha" placeholder="Senha" />
-        <button onclick="login()">Entrar</button>
+        <label for="login-senha">Senha</label>
+        <input
+          type="password"
+          id="login-senha"
+          placeholder="Digite sua senha"
+          autocomplete="current-password"
+        />
+
+        <button type="submit">Entrar</button>
         <div class="trocar">
-          Não tem conta? <span onclick="trocarTela('cadastro')">Cadastre-se</span>
+          Não tem conta?
+          <button type="button" onclick="trocarTela('cadastro')">Cadastre-se</button>
         </div>
         <p class="erro" id="login-erro"></p>
-      </div>
+      </form>
 
-      <!-- FORMULÁRIO DE CADASTRO -->
-      <div id="tela-cadastro" style="display:none">
-        <input type="text" id="cadastro-nome" placeholder="Nome" />
-        <input type="email" id="cadastro-email" placeholder="Email" />
-        <input type="password" id="cadastro-senha" placeholder="Senha" />
-        <button onclick="cadastrar()">Criar conta</button>
+      <form
+        id="tela-cadastro"
+        style="display:none"
+        onsubmit="event.preventDefault(); cadastrar()"
+      >
+        <label for="cadastro-nome">Nome</label>
+        <input
+          type="text"
+          id="cadastro-nome"
+          placeholder="Seu nome"
+          autocomplete="name"
+        />
+
+        <label for="cadastro-email">E-mail</label>
+        <input
+          type="email"
+          id="cadastro-email"
+          placeholder="nome@empresa.com"
+          autocomplete="email"
+        />
+
+        <label for="cadastro-senha">Senha</label>
+        <input
+          type="password"
+          id="cadastro-senha"
+          placeholder="Crie uma senha"
+          autocomplete="new-password"
+        />
+
+        <button type="submit">Criar conta</button>
         <div class="trocar">
-          Já tem conta? <span onclick="trocarTela('login')">Entrar</span>
+          Já tem conta?
+          <button type="button" onclick="trocarTela('login')">Entrar</button>
         </div>
         <p class="erro" id="cadastro-erro"></p>
-      </div>
-
-    </div>
-  </div>
+      </form>
+    </section>
+  </main>
 
   <script src="/js/login.js"></script>
 </body>
